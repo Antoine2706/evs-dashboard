@@ -324,6 +324,81 @@ body.role-corp .gm-view{display:none!important}
 .popup-stat strong{display:block;font-size:15px;font-weight:700;color:#1D3348}
 .pulse-ring{animation:mapPulse 2s ease-out infinite}
 @keyframes mapPulse{0%{opacity:.8;transform:scale(1)}70%{opacity:0;transform:scale(2.5)}100%{opacity:0;transform:scale(2.5)}}
+
+/* ── View toggle button ─────────────────────────────── */
+.view-toggle{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px}
+.view-btn{background:none;border:none;padding:5px 11px;border-radius:16px;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+.view-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* ── Bottom nav (mobile only) ───────────────────────── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--sidebar-bg);border-top:1px solid var(--sidebar-border);z-index:200;align-items:stretch}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:rgba(209,250,255,.55);font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border:none;background:none;padding:0;transition:color .15s}
+.bn-item i{font-size:20px}
+.bn-item.active{color:#D1FAFF}
+.bn-more-menu{display:none;position:fixed;bottom:60px;left:0;right:0;background:var(--sidebar-bg);border-top:1px solid var(--sidebar-border);z-index:199;padding:8px 0}
+.bn-more-menu.open{display:block}
+.bn-more-item{display:flex;align-items:center;gap:12px;padding:12px 24px;color:rgba(209,250,255,.75);font-size:13px;font-weight:500;cursor:pointer}
+.bn-more-item i{font-size:18px;width:20px}
+.bn-more-item:hover{color:#D1FAFF}
+
+/* ── Mobile layout rules (real phone + forced preview) ── */
+@media (max-width:768px){body{overflow:auto}#app{overflow:auto}}
+.mobile-view #app,@media(max-width:768px){#app}{height:auto}
+
+/* Shared mobile rules — applied by media query AND .mobile-view class */
+@media (max-width:768px){
+  .sidebar{display:none}
+  .bottom-nav{display:flex}
+  .bn-more-menu{display:none}
+  html,body{overflow:auto;height:auto}
+  #app{flex-direction:column;height:auto;min-height:100vh}
+  .main{overflow:visible}
+  .content{padding:16px 14px 72px;overflow:visible}
+  .topbar{padding:0 14px;gap:8px}
+  .filter-group{display:none}
+  .tb-title{font-size:13px}
+  .status-grid{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .policy-grid{grid-template-columns:1fr}
+  .g2{grid-template-columns:1fr}
+  .chart-grid.g2{grid-template-columns:1fr}
+  .heatmap{grid-template-columns:1fr 1fr}
+  #map-wrap{flex-direction:column;height:auto}
+  #leaflet-map{height:320px}
+  .nbhd-list{display:none}
+  [data-widget-id="ov-charts"]{grid-template-columns:1fr!important}
+  [style*="grid-template-columns:2fr 1fr"]{grid-template-columns:1fr!important}
+  [style*="grid-template-columns:200px 1fr"]{grid-template-columns:1fr!important}
+  [style*="grid-template-columns:repeat(auto-fill,minmax(320px"]{grid-template-columns:1fr!important}
+  [style*="grid-template-columns:repeat(auto-fill,minmax(280px"]{grid-template-columns:1fr!important}
+  .sec{padding-top:4px}
+  .sec-title{font-size:20px}
+  .sec-tag{font-size:10px}
+  .req-table th,.req-table td{padding:8px 10px;font-size:11px}
+}
+
+body.mobile-view .sidebar{display:none}
+body.mobile-view .bottom-nav{display:flex}
+body.mobile-view html,body.mobile-view body,body.mobile-view{overflow:auto}
+body.mobile-view #app{flex-direction:column;height:auto;min-height:100vh;overflow:auto}
+body.mobile-view .main{overflow:visible}
+body.mobile-view .content{padding:16px 14px 72px;overflow:visible}
+body.mobile-view .topbar{padding:0 14px;gap:8px}
+body.mobile-view .filter-group{display:none}
+body.mobile-view .status-grid{grid-template-columns:1fr}
+body.mobile-view .kpi-grid{grid-template-columns:1fr 1fr}
+body.mobile-view .policy-grid{grid-template-columns:1fr}
+body.mobile-view .g2{grid-template-columns:1fr}
+body.mobile-view .heatmap{grid-template-columns:1fr 1fr}
+body.mobile-view #map-wrap{flex-direction:column;height:auto}
+body.mobile-view #leaflet-map{height:320px}
+body.mobile-view .nbhd-list{display:none}
+body.mobile-view [data-widget-id="ov-charts"]{grid-template-columns:1fr!important}
+body.mobile-view [style*="grid-template-columns:2fr 1fr"]{grid-template-columns:1fr!important}
+body.mobile-view [style*="grid-template-columns:200px 1fr"]{grid-template-columns:1fr!important}
+body.mobile-view [style*="grid-template-columns:repeat(auto-fill,minmax(320px"]{grid-template-columns:1fr!important}
+body.mobile-view [style*="grid-template-columns:repeat(auto-fill,minmax(280px"]{grid-template-columns:1fr!important}
+body.mobile-view .sec-title{font-size:20px}
 </style>
 </head>
 <body>
@@ -367,6 +442,23 @@ body.role-corp .gm-view{display:none!important}
   </div>
 </div>
 <div id="app">
+
+<div class="bn-more-menu" id="bn-more-menu">
+  <div class="bn-more-item" onclick="navTo('r3');closeBnMenu()"><i class="ti ti-alert-triangle"></i><span class="nav-label">Energiearmoede</span></div>
+  <div class="bn-more-item" onclick="navTo('r4');closeBnMenu()" id="bn-r4"><i class="ti ti-file-text"></i><span class="nav-label">Beleidsrapportage</span></div>
+  <div class="bn-more-item" onclick="navTo('r5');closeBnMenu()" id="bn-r5"><i class="ti ti-chart-line"></i><span class="nav-label">Buurttrends</span></div>
+  <div class="bn-more-item" onclick="navTo('dvi');closeBnMenu()" id="bn-dvi"><i class="ti ti-file-certificate"></i><span class="nav-label">dVi Rapportage</span></div>
+  <div class="bn-more-item" onclick="navTo('map');closeBnMenu()"><i class="ti ti-map-pin"></i><span class="nav-label">Kaart</span></div>
+  <div class="bn-more-item" onclick="navTo('methodo');closeBnMenu()"><i class="ti ti-calculator"></i><span class="nav-label">Methodologie</span></div>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bn-item active" id="bn-overview" onclick="navTo('overview')"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+  <button class="bn-item" id="bn-r1" onclick="navTo('r1')"><i class="ti ti-bolt"></i>Besparing</button>
+  <button class="bn-item" id="bn-r2" onclick="navTo('r2')"><i class="ti ti-users"></i>Bereik</button>
+  <button class="bn-item" id="bn-data" onclick="navTo('data')"><i class="ti ti-database"></i>Data</button>
+  <button class="bn-item" id="bn-more" onclick="toggleBnMenu()"><i class="ti ti-dots"></i>Meer</button>
+</nav>
 
 <nav class="sidebar">
   <div class="sb-logo">
@@ -417,6 +509,10 @@ body.role-corp .gm-view{display:none!important}
       </select>
     </div>
     <button id="role-badge" class="role-badge gemeente" onclick="showRolePicker()" style="display:none"><i class="ti ti-building-community"></i><span id="role-badge-label">Gemeente</span></button>
+    <div class="view-toggle">
+      <button class="view-btn active" id="vb-desktop" onclick="setView('desktop')"><i class="ti ti-device-laptop"></i></button>
+      <button class="view-btn" id="vb-mobile" onclick="setView('mobile')"><i class="ti ti-device-mobile"></i></button>
+    </div>
     <div class="lang-toggle">
       <button class="lang-btn active" id="btn-nl" onclick="setLang('nl')">NL</button>
       <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -1093,6 +1189,34 @@ en:{
 
 let lang='nl';
 function t(k){return T[lang][k]!==undefined?T[lang][k]:(T.nl[k]||k);}
+function setView(v){
+  document.getElementById('vb-desktop').classList.toggle('active',v==='desktop');
+  document.getElementById('vb-mobile').classList.toggle('active',v==='mobile');
+  document.body.classList.toggle('mobile-view',v==='mobile');
+}
+
+function navTo(sec){
+  showSection('sec-'+sec);
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  const bn=document.getElementById('bn-'+sec);
+  if(bn) bn.classList.add('active');
+  else document.getElementById('bn-more').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function toggleBnMenu(){
+  document.getElementById('bn-more-menu').classList.toggle('open');
+}
+function closeBnMenu(){
+  document.getElementById('bn-more-menu').classList.remove('open');
+}
+document.addEventListener('click',function(e){
+  const menu=document.getElementById('bn-more-menu');
+  if(menu.classList.contains('open')&&!menu.contains(e.target)&&e.target.id!=='bn-more'){
+    menu.classList.remove('open');
+  }
+});
+
 function setLang(l){
   lang=l;
   document.getElementById('html-root').lang=l;
