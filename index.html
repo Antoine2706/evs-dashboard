@@ -399,6 +399,26 @@ body.mobile-view [style*="grid-template-columns:200px 1fr"]{grid-template-column
 body.mobile-view [style*="grid-template-columns:repeat(auto-fill,minmax(320px"]{grid-template-columns:1fr!important}
 body.mobile-view [style*="grid-template-columns:repeat(auto-fill,minmax(280px"]{grid-template-columns:1fr!important}
 body.mobile-view .sec-title{font-size:20px}
+
+/* ── Mobile: role picker ─────────────────────────────── */
+@media (max-width:768px){
+  .rp-cards{flex-direction:column;gap:14px;width:100%;max-width:360px}
+  .rp-card{width:auto}
+  .rp-inner{padding:24px 20px;gap:24px}
+  .rp-logo-text{font-size:18px}
+}
+body.mobile-view .rp-cards{flex-direction:column;gap:14px;width:100%;max-width:360px}
+body.mobile-view .rp-card{width:auto}
+body.mobile-view .rp-inner{padding:24px 20px;gap:24px}
+
+/* ── Mobile: scrollable tables ───────────────────────── */
+@media (max-width:768px){
+  .req-table-wrap,.cohort-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+  .req-table,.cohort{min-width:480px}
+  .cohort{min-width:520px}
+}
+body.mobile-view .req-table-wrap,body.mobile-view .cohort-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+body.mobile-view .req-table,body.mobile-view .cohort{min-width:480px}
 </style>
 </head>
 <body>
@@ -456,7 +476,7 @@ body.mobile-view .sec-title{font-size:20px}
   <button class="bn-item active" id="bn-overview" onclick="navTo('overview')"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
   <button class="bn-item" id="bn-r1" onclick="navTo('r1')"><i class="ti ti-bolt"></i>Besparing</button>
   <button class="bn-item" id="bn-r2" onclick="navTo('r2')"><i class="ti ti-users"></i>Bereik</button>
-  <button class="bn-item" id="bn-data" onclick="navTo('data')"><i class="ti ti-database"></i>Data</button>
+  <button class="bn-item" id="bn-methodo" onclick="navTo('methodo')"><i class="ti ti-database"></i>Data</button>
   <button class="bn-item" id="bn-more" onclick="toggleBnMenu()"><i class="ti ti-dots"></i>Meer</button>
 </nav>
 
@@ -630,10 +650,10 @@ body.mobile-view .sec-title{font-size:20px}
       </div>
       <div data-widget-id="ov-table" class="chart-card">
         <div class="chart-head"><div><div class="chart-title" data-i18n="ov.tbl.title">Vereistenstatus — Pilotfase 2025</div><div class="chart-sub" data-i18n="ov.tbl.sub">Voortgang per Must Have monitoringsvereiste</div></div></div>
-        <table class="req-table">
+        <div class="req-table-wrap"><table class="req-table">
           <thead><tr><th data-i18n="th.req">Vereiste</th><th data-i18n="th.desc">Omschrijving</th><th data-i18n="th.policy">Beleidskader</th><th data-i18n="th.status">Status</th></tr></thead>
           <tbody id="req-tbody"></tbody>
-        </table>
+        </table></div>
       </div>
       <!-- Optional pinned widgets (hidden by default, enabled via widget panel) -->
       <div data-widget-id="ov-funnel" style="display:none;margin-top:4px">
@@ -748,7 +768,7 @@ body.mobile-view .sec-title{font-size:20px}
           <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Participatie per focuswijk</div><div class="chart-sub">% deelname van uitgenodigde huishoudens per wijk</div></div><span class="badge b-out">OUTPUT</span></div><div style="position:relative;height:200px"><canvas id="c-r2-nbhd"></canvas></div></div>
           <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Kansgelijkheid: kwetsbaar vs niet-kwetsbaar</div><div class="chart-sub">Participatie per huishoudtype per wijk (NPHLN kansgelijkheid-indicator)</div></div><span class="badge b-out">NPHLN</span></div><div style="position:relative;height:200px"><canvas id="c-r2-equity"></canvas></div></div>
         </div>
-        <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Retentie cohortanalyse — Programma</div><div class="chart-sub">% actief per maand na instroom · cohorten jan–apr 2025 · alle wijken</div></div><span class="badge b-out">OUTPUT</span></div><table class="cohort"><thead><tr id="cohort-head"></tr></thead><tbody id="cohort-body"></tbody></table></div>
+        <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Retentie cohortanalyse — Programma</div><div class="chart-sub">% actief per maand na instroom · cohorten jan–apr 2025 · alle wijken</div></div><span class="badge b-out">OUTPUT</span></div><div class="cohort-wrap"><table class="cohort"><thead><tr id="cohort-head"></tr></thead><tbody id="cohort-body"></tbody></table></div></div>
       </div>
       <!-- CORPORATION VIEW -->
       <div class="cp-view">
