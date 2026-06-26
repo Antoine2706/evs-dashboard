@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="nl" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EVS Monitor — Gemeente Heerlen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#E8F3F8;--surface:#FFFFFF;--surface2:rgba(106,142,174,.08);--border:rgba(106,142,174,.30);
+  --teal:#3D6E8E;--teal-dim:rgba(61,110,142,.12);
+  --amber:#A86B10;--amber-dim:rgba(168,107,16,.12);
+  --red:#B02020;--red-dim:rgba(176,32,32,.10);
+  --blue:#2E7D52;--blue-dim:rgba(46,125,82,.12);
+  --text:#0F2233;--text2:#2E7D52;--text3:#4A6E85;
+  --sidebar-bg:#1D3348;--sidebar-text:#D1FAFF;--sidebar-text2:rgba(209,250,255,.75);--sidebar-border:rgba(209,250,255,.15);
+  --sidebar:250px;--topbar:58px;--r:10px;--r-sm:6px;
+}
+html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;font-size:14px;background:var(--bg);color:var(--text);overflow:hidden}
+button{cursor:pointer;font-family:inherit}
+#app{display:flex;height:100vh}
+
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.sb-logo{padding:22px 18px 18px;border-bottom:1px solid var(--sidebar-border)}
+.sb-mark{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.sb-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#57A773,#6A8EAE);display:flex;align-items:center;justify-content:center;color:#1D3348;font-size:16px;flex-shrink:0}
+.sb-name{font-size:15px;font-weight:700;color:var(--sidebar-text);letter-spacing:-.2px}
+.sb-sub{font-size:10px;color:var(--sidebar-text2);text-transform:uppercase;letter-spacing:.08em}
+.sb-sect{padding:18px 18px 5px;font-size:10px;color:var(--sidebar-text2);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;color:rgba(255,255,255,.65);font-size:13px;font-weight:500;border-left:2px solid transparent;transition:all .15s;user-select:none}
+.nav-item:hover{color:#D1FAFF;background:rgba(255,255,255,.07)}
+.nav-item.active{color:#A8C8E0;background:rgba(168,200,224,.15);border-left-color:#A8C8E0}
+.nav-item i{font-size:15px;width:16px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(168,200,224,.2);color:#A8C8E0}
+.sb-footer{padding:14px 18px;border-top:1px solid var(--sidebar-border);margin-top:auto}
+.sb-status{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--sidebar-text2)}
+.dot{width:6px;height:6px;border-radius:50%;background:#A8C8E0;flex-shrink:0;animation:pulse 2.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.topbar{height:var(--topbar);flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 26px}
+.tb-title{font-size:14px;font-weight:600;flex:1}
+.content{flex:1;overflow-y:auto;padding:28px 28px 60px}
+.filter-group{display:flex;align-items:center;gap:8px}
+.filter-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+select{background:var(--bg);border:1px solid var(--border);color:var(--text2);padding:5px 10px;border-radius:var(--r-sm);font-size:12px;font-family:inherit;outline:none;cursor:pointer}
+select:hover,select:focus{border-color:var(--teal);color:var(--text)}
+.lang-toggle{display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;margin-left:4px}
+.lang-btn{padding:4px 10px;border-radius:4px;border:none;background:transparent;color:var(--text3);font-size:11px;font-weight:700;letter-spacing:.04em;transition:all .15s}
+.lang-btn.active{background:var(--teal);color:#D1FAFF}
+.lang-btn:hover:not(.active){color:var(--text2)}
+
+.sec{display:none}.sec.active{display:block}
+.sec-tag{font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-bottom:5px}
+.sec-title{font-size:24px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:5px;letter-spacing:-.4px}
+.sec-sub{font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:24px}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kpi-c,var(--teal))}
+.kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px}
+.kpi-val{font-size:26px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+.kpi-unit{font-size:13px;color:var(--text2);margin-left:2px;font-weight:500}
+.kpi-delta{font-size:11px;margin-top:7px;display:flex;align-items:center;gap:4px}
+.kpi-delta.pos{color:var(--teal)}.kpi-delta.neg{color:var(--red)}.kpi-delta.warn{color:var(--amber)}.kpi-delta.neu{color:var(--text3)}
+.status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px}
+.status-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px 24px;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.status-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--sc-c,var(--teal))}
+.sc-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px}
+.sc-val{font-size:30px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-bottom:5px}
+.sc-val span{font-size:16px;font-weight:500;letter-spacing:0}
+.sc-target{font-size:11px;color:var(--text3);margin-bottom:14px}
+.sc-target strong{color:var(--text2)}
+.sc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+.sc-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;letter-spacing:.03em}
+.sc-badge.on-track{background:rgba(87,167,115,.15);color:#57A773}
+.sc-badge.off-track{background:rgba(192,57,43,.12);color:var(--red)}
+.sc-badge.warn-track{background:rgba(196,127,23,.15);color:var(--amber)}
+.sc-trend{font-size:11px;display:flex;align-items:center;gap:3px}
+.sc-trend.up{color:var(--teal)}.sc-trend.down{color:var(--red)}.sc-trend.neu{color:var(--text3)}
+.sc-ci{font-size:10px;color:var(--text3);margin-bottom:10px;font-style:italic}
+.sc-edit-btn{background:none;border:none;color:var(--text3);font-size:11px;padding:0 4px;cursor:pointer;line-height:1;vertical-align:middle}
+.sc-edit-btn:hover{color:var(--teal)}
+.sc-target-input{background:var(--bg);border:1px solid var(--teal);border-radius:4px;color:var(--text);font-size:11px;font-weight:700;padding:1px 5px;width:72px;font-family:inherit;outline:none}
+.sc-expand{font-size:10px;color:var(--text3);cursor:pointer;margin-top:10px;user-select:none;display:flex;align-items:center;gap:3px;border:none;background:none;padding:0;font-family:inherit}
+.sc-expand:hover{color:var(--teal)}
+.sc-drill{display:none;border-top:1px solid var(--border);margin-top:12px;padding-top:12px;flex-direction:column;gap:4px}
+.sc-drill.open{display:flex}
+.sc-dr{display:flex;justify-content:space-between;font-size:11px;padding:2px 0}
+.sc-dr span:first-child{color:var(--text3)}.sc-dr span:last-child{color:var(--text);font-weight:600}
+.ctrl-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(87,167,115,.12);color:var(--blue);letter-spacing:.03em}
+.tab-export-btn{background:var(--teal-dim);border:1px solid var(--border);color:var(--teal);border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.tab-export-btn:hover{background:var(--teal);color:#D1FAFF;border-color:var(--teal)}
+.customize-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s}
+.customize-btn:hover{border-color:var(--teal);color:var(--teal)}
+.widget-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:var(--surface);border-left:1px solid var(--border);z-index:300;display:flex;flex-direction:column;transition:right .25s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 24px rgba(0,0,0,.1)}
+.widget-panel.open{right:0}
+.wp-head{padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.wp-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.wp-close{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:2px;line-height:1}
+.wp-close:hover{color:var(--text)}
+.wp-body{flex:1;overflow-y:auto;padding:16px}
+.wp-sect{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.wp-sect:first-child{margin-top:0}
+.widget-item{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:7px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none}
+.widget-item:hover{border-color:var(--teal);background:var(--teal-dim)}
+.widget-item.wi-on{border-color:rgba(106,142,174,.5);background:rgba(106,142,174,.05)}
+.wi-icon{width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:14px;flex-shrink:0}
+.wi-info{flex:1;min-width:0}
+.wi-label{font-size:12px;font-weight:600;color:var(--text)}
+.wi-desc{font-size:10px;color:var(--text3);margin-top:2px;line-height:1.4}
+.wi-toggle{width:34px;height:19px;border-radius:10px;background:var(--border);position:relative;flex-shrink:0;transition:background .2s}
+.wi-toggle.on{background:var(--teal)}
+.wi-toggle::after{content:'';position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.wi-toggle.on::after{left:18px}
+.widget-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.2);z-index:299}
+.widget-overlay.open{display:block}
+.ov-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:18px}
+.ov-mini-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .15s}
+.ov-mini-card:hover{border-color:var(--teal)}
+.ov-mini-icon{width:36px;height:36px;border-radius:8px;background:var(--teal-dim);display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:16px;flex-shrink:0}
+.ov-mini-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.ov-mini-val{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.4px}
+.ov-mini-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.kpi-delta i{font-size:12px}
+
+.chart-grid{display:grid;gap:14px;margin-bottom:14px}
+.g2{grid-template-columns:1fr 1fr}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px}
+.chart-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px}
+.chart-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
+.chart-sub{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4}
+.badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.05em;white-space:nowrap;flex-shrink:0}
+.b-out{background:var(--blue-dim);color:var(--blue)}.b-res{background:var(--teal-dim);color:var(--teal)}
+.b-imp{background:var(--amber-dim);color:var(--amber)}.b-warn{background:var(--red-dim);color:var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:11px;color:var(--text2)}
+.legend span{display:flex;align-items:center;gap:6px}
+.l-line{width:14px;height:3px;border-radius:2px;display:inline-block}
+
+.funnel{display:flex;flex-direction:column;gap:9px}
+.f-row{display:flex;align-items:center;gap:10px}
+.f-lbl{width:115px;font-size:11px;color:var(--text2);text-align:right;flex-shrink:0}
+.f-wrap{flex:1;background:rgba(255,255,255,.04);border-radius:5px;overflow:hidden;height:32px}
+.f-bar{height:100%;border-radius:5px;display:flex;align-items:center;padding:0 12px}
+.f-bar-val{font-size:12px;font-weight:700;color:rgba(255,255,255,.9)}
+.f-pct{width:42px;font-size:11px;color:var(--text3);text-align:right;flex-shrink:0}
+
+.cohort{width:100%;border-collapse:collapse;font-size:12px}
+.cohort th{padding:7px 10px;color:var(--text3);font-size:10px;font-weight:600;text-align:center;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.05em}
+.cohort th:first-child{text-align:left}
+.cohort td{padding:5px 8px;text-align:center}
+.cohort td:first-child{text-align:left;color:var(--text2);font-weight:500;font-size:11px}
+.c-cell{border-radius:4px;font-weight:600;font-size:11px;padding:3px 8px;display:block}
+
+.alert-list{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.alert{display:flex;align-items:center;gap:12px;border-radius:8px;padding:13px 16px}
+.alert.crit{background:var(--red-dim);border:1px solid rgba(240,82,82,.18)}
+.alert.warn{background:var(--amber-dim);border:1px solid rgba(249,168,38,.18)}
+.alert-ico{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.alert.crit .alert-ico{background:rgba(240,82,82,.18);color:var(--red)}
+.alert.warn .alert-ico{background:rgba(249,168,38,.18);color:var(--amber)}
+.alert-body{flex:1}
+.alert-title{font-size:13px;font-weight:600}
+.alert.crit .alert-title{color:#FCA5A5}.alert.warn .alert-title{color:#FCD34D}
+.alert-desc{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.45}
+.alert-btn{font-size:11px;padding:5px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:transparent;color:var(--text2);transition:all .2s;white-space:nowrap}
+.alert-btn:hover{border-color:var(--teal);color:var(--teal)}
+.consent-btn{border-color:var(--teal);color:var(--teal)}
+.consent-btn:hover{background:var(--teal);color:#07111F}
+.consent-granted{font-size:11px;color:var(--teal);margin-top:6px;display:flex;align-items:center;gap:5px}
+.consent-granted i{font-size:12px}
+.consent-tag{font-size:11px;font-weight:700;padding:5px 12px;border-radius:var(--r-sm);background:var(--teal-dim);color:var(--teal);white-space:nowrap;display:flex;align-items:center;gap:5px}
+
+.sec-divider{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;font-weight:600;margin:22px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.policy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.p-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.p-tag{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.05em;margin-bottom:12px;text-transform:uppercase}
+.tag-sisa{background:var(--blue-dim);color:var(--blue)}
+.tag-dvi{background:var(--amber-dim);color:var(--amber)}
+.tag-bbv{background:var(--teal-dim);color:var(--teal)}
+.p-val{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+.p-desc{font-size:11px;color:var(--text2);margin-top:6px;line-height:1.45}
+.p-ind{font-size:10px;color:var(--text3);margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+
+.export-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.export-btn{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-family:inherit;font-size:12px;font-weight:500;transition:all .2s}
+.export-btn:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-dim)}
+.export-btn i{font-size:15px}
+
+.info-box{border-radius:8px;padding:16px 20px}
+.info-box.blue{background:var(--blue-dim);border:1px solid rgba(61,156,245,.18)}
+.info-box.amber{background:var(--amber-dim);border:1px solid rgba(249,168,38,.22)}
+.info-box h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px}
+.info-box.blue h4{color:var(--blue)}.info-box.amber h4{color:var(--amber)}
+.info-box p{font-size:12px;line-height:1.6;color:var(--text2)}
+.info-box.amber p strong{color:var(--amber)}
+
+.consent{display:flex;align-items:flex-start;gap:12px;border-radius:8px;padding:14px 18px;margin-bottom:18px;background:var(--amber-dim);border:1px solid rgba(249,168,38,.22)}
+.consent i{color:var(--amber);font-size:20px;flex-shrink:0;margin-top:1px}
+.consent p{font-size:12px;color:var(--text2);line-height:1.55}
+.consent p strong{color:var(--amber)}
+
+.heatmap{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hm-cell{aspect-ratio:1.5;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:transform .15s}
+.hm-cell:hover{transform:scale(1.04)}
+.hm-name{font-size:10px;font-weight:600;color:rgba(255,255,255,.85);text-align:center;line-height:1.2;padding:0 4px}
+.hm-val{font-size:18px;font-weight:700;color:#fff}
+
+.req-table{width:100%;border-collapse:collapse;font-size:13px}
+.req-table th{text-align:left;padding:9px 14px;color:var(--text3);font-size:10px;font-weight:600;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.07em}
+.req-table td{padding:11px 14px;border-bottom:1px solid rgba(26,51,87,.4)}
+.req-table tr:last-child td{border:none}
+.req-table tr:hover td{background:rgba(255,255,255,.015)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.pill-full{background:var(--teal-dim);color:var(--teal)}
+.pill-part{background:var(--amber-dim);color:var(--amber)}
+.pill-grow{background:var(--blue-dim);color:var(--blue)}
+
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.stat-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px}
+.stat-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.stat-val{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Role picker */
+#role-picker{position:fixed;inset:0;background:#1D3348;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0}
+.rp-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 60% 40%,rgba(106,142,174,.25) 0%,transparent 70%),radial-gradient(ellipse at 20% 80%,rgba(168,200,224,.15) 0%,transparent 60%)}
+.rp-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:40px;padding:40px}
+.rp-logo{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.rp-logo-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#57A773,#6A8EAE);display:flex;align-items:center;justify-content:center;font-size:22px;color:#1D3348}
+.rp-logo-text{font-size:22px;font-weight:700;color:#D1FAFF;letter-spacing:-.3px}
+.rp-sub{font-size:13px;color:rgba(255,255,255,.55);letter-spacing:.02em;margin-top:-30px}
+.rp-prompt{font-size:14px;color:rgba(255,255,255,.7);font-weight:500;text-align:center}
+.rp-cards{display:flex;gap:20px}
+.rp-card{width:240px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:32px 28px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden}
+.rp-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s}
+.rp-card.gemeente::before{background:linear-gradient(135deg,rgba(106,142,174,.18),rgba(29,51,72,.1))}
+.rp-card.corp::before{background:linear-gradient(135deg,rgba(196,127,23,.18),rgba(192,57,43,.08))}
+.rp-card:hover{border-color:rgba(255,255,255,.35);transform:translateY(-3px);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.rp-card:hover::before{opacity:1}
+.rp-card-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.rp-card.gemeente .rp-card-icon{background:rgba(106,142,174,.2);color:#A8C8E0}
+.rp-card.corp .rp-card-icon{background:rgba(196,127,23,.2);color:#C47F17}
+.rp-card-title{font-size:17px;font-weight:700;color:#D1FAFF}
+.rp-card-org{font-size:11px;color:rgba(255,255,255,.45);margin-top:-10px}
+.rp-card-desc{font-size:12px;color:rgba(255,255,255,.6);line-height:1.55}
+.rp-card-feats{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+.rp-feat{font-size:11px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:6px}
+.rp-feat::before{content:'';width:5px;height:5px;border-radius:50%;background:#A8C8E0;flex-shrink:0}
+.rp-card.corp .rp-feat::before{background:#C47F17}
+.rp-card-btn{margin-top:4px;padding:10px;background:rgba(255,255,255,.1);border-radius:8px;text-align:center;font-size:12px;font-weight:700;color:#D1FAFF;letter-spacing:.04em}
+.rp-card:hover .rp-card-btn{background:rgba(255,255,255,.18)}
+/* Methodologie cards */
+.mth-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:9px}
+.mth-head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text)}
+.mth-head i{color:var(--teal);font-size:16px;flex-shrink:0}
+.mth-badge{margin-left:auto;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--teal-dim);color:var(--teal);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.mth-formula{font-family:monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text2);line-height:1.5}
+.mth-body{font-size:11.5px;color:var(--text2);display:flex;flex-direction:column;gap:5px;line-height:1.55}
+.mth-body p{margin:0}
+.mth-assum{font-size:10.5px;color:var(--text3);display:flex;gap:5px;align-items:flex-start;line-height:1.45;border-top:1px solid var(--border);padding-top:8px;margin-top:2px}
+.mth-assum i{flex-shrink:0;margin-top:1px}
+/* Download cards */
+.dl-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .15s}
+.dl-card:hover{border-color:var(--teal)}
+.dl-card-locked{opacity:.65}
+.dl-icon{width:34px;height:34px;border-radius:8px;background:var(--teal-dim);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.dl-card-locked .dl-icon{background:var(--surface2);color:var(--text3)}
+.dl-info{flex:1;min-width:0}
+.dl-name{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px}
+.dl-meta{font-size:10px;color:var(--text3);line-height:1.4}
+.dl-btns{display:flex;gap:5px;flex-shrink:0}
+.dl-btn{padding:5px 11px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:10px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
+.dl-btn:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-dim)}
+.dl-btn-lock{border-color:var(--border);color:var(--text3)}
+.dl-btn-lock:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-dim)}
+/* Role badge in topbar */
+.role-badge{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:opacity .15s;border:none}
+.role-badge:hover{opacity:.8}
+.role-badge.gemeente{background:rgba(106,142,174,.15);color:#6A8EAE}
+.role-badge.corp{background:rgba(196,127,23,.15);color:#C47F17}
+/* Role-gated nav */
+[data-role-only].hidden{display:none}
+/* Role visibility — set via body class */
+body.role-gemeente .cp-view{display:none!important}
+body.role-corp .gm-view{display:none!important}
+/* Corp-specific overview */
+#kpi-corp{display:none}
+/* Map section */
+#map-wrap{display:flex;gap:18px;height:calc(100vh - var(--topbar) - 120px)}
+#leaflet-map{flex:1;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);min-height:400px}
+.map-sidebar{width:240px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.map-live-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#6A8EAE;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.map-live-dot{width:7px;height:7px;border-radius:50%;background:#6A8EAE;animation:pulse 2s infinite}
+.nbhd-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;cursor:pointer;transition:border-color .15s}
+.nbhd-card:hover,.nbhd-card.sel{border-color:#6A8EAE;background:rgba(106,142,174,.04)}
+.nbhd-card-name{font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px}
+.nbhd-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.nbhd-stat{font-size:10px;color:var(--text3)}
+.nbhd-stat strong{display:block;font-size:13px;font-weight:700;color:var(--text2)}
+.map-legend{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-top:auto}
+.map-legend-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.legend-row{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text2);margin-bottom:5px}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.leaflet-popup-content-wrapper{background:#D1FAFF;border:1px solid rgba(168,200,224,.5);border-radius:8px;box-shadow:0 4px 20px rgba(29,51,72,.15);font-family:'DM Sans',sans-serif}
+.leaflet-popup-content{margin:12px 16px;font-size:13px;color:#1D3348}
+.leaflet-popup-tip{background:#D1FAFF}
+.map-layer-btn{padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+.map-layer-btn:hover{border-color:var(--teal);color:var(--teal)}
+.map-layer-btn.active{background:var(--teal);border-color:var(--teal);color:#D1FAFF}
+.popup-name{font-weight:700;font-size:14px;color:#1D3348;margin-bottom:8px}
+.popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}
+.popup-stat{font-size:11px;color:#57A773}
+.popup-stat strong{display:block;font-size:15px;font-weight:700;color:#1D3348}
+.pulse-ring{animation:mapPulse 2s ease-out infinite}
+@keyframes mapPulse{0%{opacity:.8;transform:scale(1)}70%{opacity:0;transform:scale(2.5)}100%{opacity:0;transform:scale(2.5)}}
+</style>
+</head>
+<body>
+<div id="role-picker">
+  <div class="rp-bg"></div>
+  <div class="rp-inner">
+    <div class="rp-logo">
+      <div class="rp-logo-icon"><i class="ti ti-bolt"></i></div>
+      <div class="rp-logo-text">EVS Monitor</div>
+    </div>
+    <div class="rp-sub">Energieverdienspel · Gemeente Heerlen · Pilotfase 2025</div>
+    <div class="rp-prompt">Selecteer uw rol om het dashboard te openen</div>
+    <div class="rp-cards">
+      <div class="rp-card gemeente" onclick="selectRole('gemeente')">
+        <div class="rp-card-icon"><i class="ti ti-building-community"></i></div>
+        <div class="rp-card-title">Gemeente Heerlen</div>
+        <div class="rp-card-org">Beleids- &amp; programmamonitoring</div>
+        <div class="rp-card-desc">Volledig overzicht van het EVS-programma: SPUK-verantwoording, energiearmoede, bereik en regionale context.</div>
+        <div class="rp-card-feats">
+          <div class="rp-feat">SPUK / SiSa / BBV rapportage</div>
+          <div class="rp-feat">Energiearmoede detectie &amp; signalen</div>
+          <div class="rp-feat">Buurttrends &amp; regionale vergelijking</div>
+          <div class="rp-feat">Beleidsexport (PDF, Excel, XML)</div>
+        </div>
+        <div class="rp-card-btn">Inloggen als Gemeente →</div>
+      </div>
+      <div class="rp-card corp" onclick="selectRole('corp')">
+        <div class="rp-card-icon"><i class="ti ti-home-2"></i></div>
+        <div class="rp-card-title">Woningcorporatie</div>
+        <div class="rp-card-org">Woonpunt · Weller · Vincio Wonen</div>
+        <div class="rp-card-desc">Portfolio-dashboard voor woningcorporaties: huurderparticipatie, energiebesparing per complex en dVi-indicatoren.</div>
+        <div class="rp-card-feats">
+          <div class="rp-feat">dVi H02 / H04 / H05 indicatoren</div>
+          <div class="rp-feat">Huurder energiearmoede signalen</div>
+          <div class="rp-feat">Participatie per complex</div>
+          <div class="rp-feat">Nationale Prestatieafspraken</div>
+        </div>
+        <div class="rp-card-btn">Inloggen als Corporatie →</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="app">
+
+<nav class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-mark">
+      <div class="sb-icon"><i class="ti ti-bolt"></i></div>
+      <div class="sb-name">EVS Monitor</div>
+    </div>
+    <div class="sb-sub" data-i18n="sb.sub">Gemeente Heerlen · Heerlen-Noord</div>
+  </div>
+  <div class="sb-sect" data-i18n="sb.sect.ov">Overzicht</div>
+  <div class="nav-item active" data-sec="overview"><i class="ti ti-layout-dashboard"></i><span data-i18n="nav.dashboard">Dashboard</span></div>
+  <div class="sb-sect" id="sb-sect-req">Vereisten</div>
+  <div class="nav-item" data-sec="r1" data-label-gemeente="Energiebesparing" data-label-corp="Portfolio Besparing"><i class="ti ti-bolt"></i><span class="nav-label">Energiebesparing</span></div>
+  <div class="nav-item" data-sec="r2" data-label-gemeente="Bereik &amp; Participatie" data-label-corp="Huurder Participatie"><i class="ti ti-users"></i><span class="nav-label">Bereik &amp; Participatie</span></div>
+  <div class="nav-item" data-sec="r3" data-label-gemeente="Energiearmoede" data-label-corp="Huurder Signalen"><i class="ti ti-alert-triangle"></i><span class="nav-label">Energiearmoede</span></div>
+  <div class="nav-item" data-sec="r4" data-role-only="gemeente"><i class="ti ti-file-text"></i><span class="nav-label">Beleidsrapportage</span></div>
+  <div class="nav-item" data-sec="r5" data-role-only="gemeente"><i class="ti ti-chart-line"></i><span class="nav-label">Buurttrends</span></div>
+  <div class="nav-item" data-sec="dvi" data-role-only="corp"><i class="ti ti-file-certificate"></i><span class="nav-label">dVi Rapportage</span></div>
+  <div class="sb-sect">Kaart &amp; Data</div>
+  <div class="nav-item" data-sec="map"><i class="ti ti-map-pin"></i><span class="nav-label">Wijkkaart</span></div>
+  <div class="nav-item" data-sec="methodo"><i class="ti ti-calculator"></i><span class="nav-label">Methodologie &amp; Data</span></div>
+  <div class="sb-footer">
+    <div class="sb-status"><div class="dot"></div><span data-i18n="sb.footer">Pilotfase · jan–jun 2025</span></div>
+    <div style="margin-top:10px"><button id="switch-role-btn" onclick="showRolePicker()" style="width:100%;padding:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:rgba(255,255,255,.6);font-size:11px;font-family:inherit;cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.14)'" onmouseout="this.style.background='rgba(255,255,255,.08)'"><i class="ti ti-switch-horizontal" style="font-size:12px;vertical-align:middle;margin-right:4px"></i>Wissel rol</button></div>
+  </div>
+</nav>
+
+<div class="main">
+  <header class="topbar">
+    <div class="tb-title" id="tb-title">Dashboard Overzicht</div>
+    <div class="filter-group">
+      <span class="filter-label" data-i18n="tb.period">Periode</span>
+      <select><option>Jan–Jun 2025</option><option>2025 (volledig)</option><option>2024 (context)</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label" data-i18n="tb.corp">Corporatie</span>
+      <select id="sel-corp"><option>Alle corporaties</option><option>Woonpunt</option><option>Weller</option><option>Vincio Wonen</option></select>
+    </div>
+    <div class="filter-group" id="geo-filter-group">
+      <span class="filter-label">Locatie</span>
+      <select id="sel-geo" onchange="applyGeoFilter(this.value)">
+        <option value="all">Alle wijken</option>
+        <option value="schuttersweide">Schuttersweide</option>
+        <option value="breitnerstraat">Breitnerstraat</option>
+        <option value="bolstraat">Ferd. Bolstraat</option>
+        <option value="breughelstraat">P. Breughelstraat</option>
+        <option value="vrieheide">Vrieheide</option>
+      </select>
+    </div>
+    <button id="role-badge" class="role-badge gemeente" onclick="showRolePicker()" style="display:none"><i class="ti ti-building-community"></i><span id="role-badge-label">Gemeente</span></button>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-nl" onclick="setLang('nl')">NL</button>
+      <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <section id="sec-overview" class="sec active">
+      <div class="sec-tag" data-i18n="ov.tag">Energieverdienspel · Gemeente Heerlen</div>
+      <div class="sec-title" data-i18n="ov.title">Dashboard Overzicht</div>
+      <div class="sec-sub" data-i18n="ov.sub">Beleids- en impactmonitoring voor Gemeente Heerlen en woningcorporaties. Pilotfase januari–juni 2025 in vijf focuswijken van Heerlen-Noord (56.000 bewoners, 14 districten, 13,4% energiearmoede — hoogste van Nederland).</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px;margin-top:-10px">
+        <button class="customize-btn" onclick="openWidgetPanel()"><i class="ti ti-layout-dashboard" style="font-size:12px"></i> Dashboard aanpassen</button>
+      </div>
+      <!-- Gemeente status cards -->
+      <div data-widget-id="ov-kpis">
+      <div class="status-grid gm-view" id="kpi-gemeente">
+        <div class="status-card" style="--sc-c:var(--amber)">
+          <div class="sc-label">Kostenbesparing · Gas + Elektriciteit</div>
+          <div class="sc-val" id="sc-gm-sav">€14.200</div>
+          <div class="sc-ci">±€840 betrouwbaarheidsinterval (95% · weerscorrectie)</div>
+          <div class="sc-target">Doel: <strong id="sc-t-sav">€15.000</strong> <button class="sc-edit-btn" onclick="editTarget('sc-t-sav','€',14200,'badge-sav')" title="Doel aanpassen"><i class="ti ti-pencil"></i></button> — SiSa M01</div>
+          <div class="sc-footer">
+            <span class="sc-badge warn-track" id="badge-sav"><i class="ti ti-clock" style="font-size:11px"></i> 94,7% van doel</span>
+            <span class="sc-trend up"><i class="ti ti-trending-up"></i> +€2.100/mnd</span>
+          </div>
+          <button class="sc-expand" onclick="toggleDrill('drill-sav')"><i class="ti ti-chevron-down" style="font-size:10px"></i> Details</button>
+          <div class="sc-drill" id="drill-sav">
+            <div class="sc-dr"><span>Gasbesparing</span><span>€5.558</span></div>
+            <div class="sc-dr"><span>Elektriciteitsbesparing</span><span>€8.642</span></div>
+            <div class="sc-dr"><span>Prognose eindtotaal</span><span>€15.800</span></div>
+            <div class="sc-dr"><span>Vorige maand</span><span>€13.100 (+8,4%)</span></div>
+            <div class="sc-dr"><span>Beste wijk</span><span>Ferd. Bolstraat</span></div>
+          </div>
+        </div>
+        <div class="status-card" style="--sc-c:var(--teal)">
+          <div class="sc-label">Bereik deelnemers · SiSa M02</div>
+          <div class="sc-val" id="sc-gm-reach">847 <span>huish.</span></div>
+          <div class="sc-ci">±23 huish. (±2,7% · steekproef n=847)</div>
+          <div class="sc-target">Doel: <strong id="sc-t-reach">840</strong> huish. <button class="sc-edit-btn" onclick="editTarget('sc-t-reach','',847,'badge-reach')" title="Doel aanpassen"><i class="ti ti-pencil"></i></button> (20% van 4.200)</div>
+          <div class="sc-footer">
+            <span class="sc-badge on-track" id="badge-reach"><i class="ti ti-check" style="font-size:11px"></i> Op koers</span>
+            <span class="sc-trend up"><i class="ti ti-trending-up"></i> 20,2% bereik</span>
+          </div>
+          <button class="sc-expand" onclick="toggleDrill('drill-reach')"><i class="ti ti-chevron-down" style="font-size:10px"></i> Details</button>
+          <div class="sc-drill" id="drill-reach">
+            <div class="sc-dr"><span>Schuttersweide</span><span>185 huish.</span></div>
+            <div class="sc-dr"><span>Breitnerstraat</span><span>148 huish.</span></div>
+            <div class="sc-dr"><span>Ferd. Bolstraat</span><span>218 huish.</span></div>
+            <div class="sc-dr"><span>P. Breughelstraat</span><span>129 huish.</span></div>
+            <div class="sc-dr"><span>Vrieheide</span><span>167 huish.</span></div>
+          </div>
+        </div>
+        <div class="status-card" style="--sc-c:var(--teal)">
+          <div class="sc-label">Energiekostenreductie · SPUK M01</div>
+          <div class="sc-val" id="sc-gm-pct">6,1 <span>%</span></div>
+          <div class="sc-ci">±0,4% (95% BI · KNMI weerscorrectie)</div>
+          <div class="sc-target">Doel: <strong id="sc-t-pct">≥ 5%</strong> <button class="sc-edit-btn" onclick="editTarget('sc-t-pct','',6.1,'badge-pct')" title="Doel aanpassen"><i class="ti ti-pencil"></i></button> — SPUK-drempel</div>
+          <div class="sc-footer">
+            <span class="sc-badge on-track" id="badge-pct"><i class="ti ti-check" style="font-size:11px"></i> Op koers</span>
+            <span class="sc-trend up"><i class="ti ti-trending-up"></i> +0,4% vs vorige mnd</span>
+          </div>
+          <button class="sc-expand" onclick="toggleDrill('drill-pct')"><i class="ti ti-chevron-down" style="font-size:10px"></i> Details</button>
+          <div class="sc-drill" id="drill-pct">
+            <div class="sc-dr"><span>Gasreductie</span><span>14,6%</span></div>
+            <div class="sc-dr"><span>Elektriciteitreductie</span><span>8,4%</span></div>
+            <div class="sc-dr"><span>Beste wijk</span><span>Ferd. Bolstraat (14,2%)</span></div>
+            <div class="sc-dr"><span>Controlegroep drift</span><span>+0,3% (referentiewaarde)</span></div>
+            <div class="sc-dr"><span>BBV effect ratio</span><span>1 : 2,8</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- Corporation status cards -->
+      <div class="status-grid cp-view" id="kpi-corp">
+        <div class="status-card" style="--sc-c:var(--teal)">
+          <div class="sc-label">dVi H04 · Bereik eigen huurders</div>
+          <div class="sc-val">22,6 <span>%</span></div>
+          <div class="sc-target">Doel: <strong>≥ 20%</strong> — Nationale Prestatieafspraken · NPA</div>
+          <div class="sc-footer">
+            <span class="sc-badge on-track"><i class="ti ti-check" style="font-size:11px"></i> Op koers</span>
+            <span class="sc-trend up"><i class="ti ti-trending-up"></i> 412 van 1.820 huurders</span>
+          </div>
+        </div>
+        <div class="status-card" style="--sc-c:var(--teal)">
+          <div class="sc-label">dVi H02 · Besparing per huurder</div>
+          <div class="sc-val">€168</div>
+          <div class="sc-target">Doel: <strong>€150</strong> per deelnemend huishouden · dVi H02</div>
+          <div class="sc-footer">
+            <span class="sc-badge on-track"><i class="ti ti-check" style="font-size:11px"></i> Op koers</span>
+            <span class="sc-trend up"><i class="ti ti-trending-up"></i> +12% boven doel</span>
+          </div>
+        </div>
+        <div class="status-card" style="--sc-c:var(--red)">
+          <div class="sc-label">dVi H05 · Energiearmoede signalen</div>
+          <div class="sc-val">23 <span>huish.</span></div>
+          <div class="sc-target">Doel: <strong>monitoring + actie</strong> — Heerlen Prestatieafspraken</div>
+          <div class="sc-footer">
+            <span class="sc-badge warn-track"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Actie vereist</span>
+            <span class="sc-trend neu"><i class="ti ti-map-pin"></i> In uw portfolio</span>
+          </div>
+        </div>
+      </div>
+      </div><!-- /ov-kpis -->
+      <!-- Overview charts -->
+      <div data-widget-id="ov-charts" style="display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px">
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">Totale energiebesparing — jan–jun 2025</div><div class="chart-sub">Cumulatieve gas- en elektriciteitsbesparing per maand</div></div></div>
+          <div style="position:relative;height:180px"><canvas id="c-ov-line"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">Verdeling energiebesparing</div><div class="chart-sub">Aandeel gas vs. elektriciteit in totale besparing</div></div></div>
+          <div style="position:relative;height:180px"><canvas id="c-ov-pie"></canvas></div>
+        </div>
+      </div>
+      <div data-widget-id="ov-table" class="chart-card">
+        <div class="chart-head"><div><div class="chart-title" data-i18n="ov.tbl.title">Vereistenstatus — Pilotfase 2025</div><div class="chart-sub" data-i18n="ov.tbl.sub">Voortgang per Must Have monitoringsvereiste</div></div></div>
+        <table class="req-table">
+          <thead><tr><th data-i18n="th.req">Vereiste</th><th data-i18n="th.desc">Omschrijving</th><th data-i18n="th.policy">Beleidskader</th><th data-i18n="th.status">Status</th></tr></thead>
+          <tbody id="req-tbody"></tbody>
+        </table>
+      </div>
+      <!-- Optional pinned widgets (hidden by default, enabled via widget panel) -->
+      <div data-widget-id="ov-funnel" style="display:none;margin-top:4px">
+        <div class="sec-tag" style="margin-bottom:8px">Participatie · Bereik &amp; Retentie</div>
+        <div class="kpi-grid" style="margin-bottom:0">
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">Uitgenodigden</div><div class="kpi-val">4.200</div><div class="kpi-delta neu"><i class="ti ti-users"></i><span>Alle focuswijken · SiSa M02</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">Geregistreerd</div><div class="kpi-val">1.240</div><div class="kpi-delta pos"><i class="ti ti-trending-up"></i><span>29,5% conversie</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--blue)"><div class="kpi-label">Actief (afgelopen mnd)</div><div class="kpi-val">612<span class="kpi-unit"> huish.</span></div><div class="kpi-delta pos"><i class="ti ti-repeat"></i><span>72,3% retentie</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">Kwetsbare deelname</div><div class="kpi-val">38<span class="kpi-unit">%</span></div><div class="kpi-delta warn"><i class="ti ti-alert-circle"></i><span>vs 52% niet-kwetsbaar</span></div></div>
+        </div>
+      </div>
+      <div data-widget-id="ov-ab" style="display:none;margin-top:4px">
+        <div class="sec-tag" style="margin-bottom:8px">A/B Analyse · Controlegroep vs. EVS-deelnemers</div>
+        <div class="kpi-grid" style="margin-bottom:0">
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">Gasreductie (app)</div><div class="kpi-val">−14,6<span class="kpi-unit">%</span></div><div class="kpi-delta pos"><i class="ti ti-trending-down"></i><span>vs. controlegroep n=312</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">Elektriciteitreductie (app)</div><div class="kpi-val">−8,4<span class="kpi-unit">%</span></div><div class="kpi-delta pos"><i class="ti ti-trending-down"></i><span>P4 slimme meter data</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--blue)"><div class="kpi-label">Controlegroep drift</div><div class="kpi-val">+0,3<span class="kpi-unit">%</span></div><div class="kpi-delta neu"><i class="ti ti-minus"></i><span>Referentie stabiel · n=312</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--blue)"><div class="kpi-label">Betrouwbaarheid</div><div class="kpi-val">95<span class="kpi-unit">% BI</span></div><div class="kpi-delta pos"><i class="ti ti-shield-check"></i><span>AVG-compliant aggregatie</span></div></div>
+        </div>
+      </div>
+      <div data-widget-id="ov-poverty" style="display:none;margin-top:4px">
+        <div class="sec-tag" style="margin-bottom:8px">Energiearmoede · CBS-referentiecijfers 2024</div>
+        <div class="kpi-grid" style="margin-bottom:0">
+          <div class="kpi" style="--kpi-c:var(--red)"><div class="kpi-label">Heerlen</div><div class="kpi-val" style="color:var(--red)">13,4<span class="kpi-unit">%</span></div><div class="kpi-delta neg"><i class="ti ti-alert-triangle"></i><span>Hoogste van Nederland</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">Vaals</div><div class="kpi-val">12,3<span class="kpi-unit">%</span></div><div class="kpi-delta warn"><i class="ti ti-map-pin"></i><span>Regio Parkstad</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">Kerkrade</div><div class="kpi-val">10,0<span class="kpi-unit">%</span></div><div class="kpi-delta warn"><i class="ti ti-map-pin"></i><span>Regio Parkstad</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">NL gemiddelde</div><div class="kpi-val">6,1<span class="kpi-unit">%</span></div><div class="kpi-delta neu"><i class="ti ti-home"></i><span>CBS 2024</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-r1" class="sec">
+      <!-- GEMEENTE VIEW -->
+      <div class="gm-view">
+        <div class="sec-tag">R1 · Outcome — SPUK / SiSa M01 / BBV / dVi H02</div>
+        <div class="sec-title">Energiebesparing</div>
+        <div class="sec-sub">Gemeten reductie voor alle 847 deelnemende huishoudens t.o.v. een weersgecorrigeerde referentiewaarde. Tarieven 2025: €0,28/kWh · €1,34/m³.</div>
+        <div class="kpi-grid">
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">Elektriciteitsbesparing</div><div class="kpi-val">47.300<span class="kpi-unit"> kWh</span></div><div class="kpi-delta pos"><i class="ti ti-trending-down"></i><span>Cumulatief jan–jun 2025 · 847 huish.</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--blue)"><div class="kpi-label">Gasbesparing</div><div class="kpi-val">3.840<span class="kpi-unit"> m³</span></div><div class="kpi-delta pos"><i class="ti ti-trending-down"></i><span>Cumulatief jan–jun 2025 · alle wijken</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">Totale kostenbesparing</div><div class="kpi-val">€14.200</div><div class="kpi-delta pos"><i class="ti ti-coin"></i><span>SiSa M01 · Gas + elektriciteit</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">BBV effect ratio</div><div class="kpi-val">1 : 2,8</div><div class="kpi-delta pos"><i class="ti ti-chart-arrows-vertical"></i><span>€1 programmakost → €2,80 besparing</span></div></div>
+        </div>
+        <div class="chart-card" style="margin-bottom:14px">
+          <div class="chart-head"><div><div class="chart-title">Gasverbruik: werkelijk vs referentiewaarde — jan t/m jun 2025</div><div class="chart-sub">m³/maand (gem. per deelnemer) · Weersgecorrigeerd (KNMI) · 847 huishoudens</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge b-res">OUTCOME</span><button class="tab-export-btn" onclick="downloadCSV('energy_per_wijk')"><i class="ti ti-download" style="font-size:11px"></i> CSV</button><button class="tab-export-btn" onclick="downloadJSON('energy_per_wijk')"><i class="ti ti-download" style="font-size:11px"></i> JSON</button></div></div>
+          <div style="position:relative;height:240px"><canvas id="c-r1-gas"></canvas></div>
+          <div class="legend"><span><span class="l-line" style="background:var(--text3)"></span>Referentie (verwacht)</span><span><span class="l-line" style="background:var(--blue)"></span>Werkelijk gas (m³)</span><span><span class="l-line" style="background:var(--teal)"></span>Werkelijk elektr. (kWh/10)</span></div>
+        </div>
+        <div class="chart-grid g2">
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Maandelijkse kostenbesparing (€)</div><div class="chart-sub">Gas + elektriciteit · alle 847 deelnemers</div></div><span class="badge b-res">SiSa M01</span></div><div style="position:relative;height:200px"><canvas id="c-r1-cost"></canvas></div></div>
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">CO₂ vermeden per maand (kg)</div><div class="chart-sub">Gas: 1,89 kg/m³ · Elektriciteit: 0,25 kg/kWh · Programmatotaal</div></div><span class="badge b-res">CO₂</span></div><div style="position:relative;height:200px"><canvas id="c-r1-co2"></canvas></div></div>
+        </div>
+        <!-- Control group A/B chart -->
+        <div class="chart-card" style="margin-bottom:14px">
+          <div class="chart-head">
+            <div><div class="chart-title">A/B Analyse — EVS deelnemers vs. Controlegroep</div><div class="chart-sub">Gemiddeld gasverbruik (m³/mnd) · P4 slimme meter data · EVS-app gebruikers (n=847) vs. niet-deelnemers zelfde buurt (n=312)</div></div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="ctrl-badge"><i class="ti ti-test-pipe" style="font-size:10px"></i> Controlegroep actief</span>
+              <button class="tab-export-btn" onclick="downloadCSV('controlegroep')"><i class="ti ti-download" style="font-size:11px"></i> CSV</button>
+            </div>
+          </div>
+          <div style="position:relative;height:220px"><canvas id="c-r1-ctrl"></canvas></div>
+          <div class="legend"><span><span class="l-line" style="background:var(--teal)"></span>EVS deelnemers (app)</span><span><span class="l-line" style="background:var(--text3);opacity:.6"></span>Controlegroep (geen app)</span><span><span class="l-line" style="background:var(--amber);border-top:2px dashed var(--amber)"></span>Gemeten effect (verschil)</span></div>
+          <div style="background:rgba(87,167,115,.08);border:1px solid rgba(87,167,115,.2);border-radius:8px;padding:12px 16px;margin-top:14px;display:flex;gap:12px">
+            <i class="ti ti-shield-check" style="color:var(--blue);font-size:18px;flex-shrink:0;margin-top:1px"></i>
+            <div style="font-size:11px;color:var(--text2);line-height:1.6"><strong style="color:var(--text)">Ethische waarborgen controlegroep</strong> — Controlegroep bestaat uit huurders die zelf niet hebben ingeschreven (passieve P4 data, geen interventie). Data is volledig geanonimiseerd en gebundeld op wijkniveau (≥10 huish./postcode-6). Geen persoonlijk contact of uitsluiting van voordelen. Conform AVG art. 6(1)(e) — taak van algemeen belang.</div>
+          </div>
+        </div>
+        <div class="info-box blue"><h4>Meetmethodiek (SPUK/SiSa M01)</h4><p>Referentiewaarde bepaald via graaddagenmethode (KNMI-station Heerlen). Werkelijk verbruik via P4 slimme meters (kwartierwaarden). Controlegroep: niet-deelnemers in dezelfde pilotwijken (n=312, passieve P4 meting). Tarieven 2025: €0,28/kWh · €1,34/m³. BBV-verantwoording: €1 programmakost → €2,80 gerealiseerde besparing.</p></div>
+      </div>
+      <!-- CORPORATION VIEW -->
+      <div class="cp-view">
+        <div class="sec-tag">dVi H02 · Energiebesparing per huurder — Mijn portfolio</div>
+        <div class="sec-title">Portfolio Besparing</div>
+        <div class="sec-sub">Energiebesparing voor uw 412 deelnemende huurders t.o.v. weersgecorrigeerde referentiewaarde per complex. Conform dVi H02 verantwoording. Tarieven 2025: €0,28/kWh · €1,34/m³.</div>
+        <div class="kpi-grid">
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">Elektriciteitsbesparing portfolio</div><div class="kpi-val">23.000<span class="kpi-unit"> kWh</span></div><div class="kpi-delta pos"><i class="ti ti-trending-down"></i><span>Cumulatief jan–jun 2025 · 412 huurders</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--blue)"><div class="kpi-label">Gasbesparing portfolio</div><div class="kpi-val">1.870<span class="kpi-unit"> m³</span></div><div class="kpi-delta pos"><i class="ti ti-trending-down"></i><span>Cumulatief jan–jun 2025 · 6 complexen</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">dVi H02 · Besparing per huurder</div><div class="kpi-val">€168</div><div class="kpi-delta pos"><i class="ti ti-coin"></i><span>Gem. per deelnemend huishouden</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">CO₂ reductie portfolio</div><div class="kpi-val">5.740<span class="kpi-unit"> kg</span></div><div class="kpi-delta pos"><i class="ti ti-leaf"></i><span>Gas + elektriciteit · mijn huurders</span></div></div>
+        </div>
+        <div class="chart-card" style="margin-bottom:14px">
+          <div class="chart-head"><div><div class="chart-title">Gasverbruik huurders: werkelijk vs referentiewaarde — jan t/m jun 2025</div><div class="chart-sub">m³/maand (gem. per huurder) · Weersgecorrigeerd (KNMI) · 412 huurders in uw portfolio</div></div><span class="badge b-res">dVi H02</span></div>
+          <div style="position:relative;height:240px"><canvas id="c-r1-gas-cp"></canvas></div>
+          <div class="legend"><span><span class="l-line" style="background:var(--text3)"></span>Referentie (verwacht)</span><span><span class="l-line" style="background:var(--blue)"></span>Werkelijk gas (m³)</span><span><span class="l-line" style="background:var(--teal)"></span>Werkelijk elektr. (kWh/10)</span></div>
+        </div>
+        <div class="chart-grid g2">
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Kostenbesparing per maand — Portfolio</div><div class="chart-sub">Gas + elektriciteit · uw 412 deelnemende huurders</div></div><span class="badge b-res">dVi H02</span></div><div style="position:relative;height:200px"><canvas id="c-r1-cost-cp"></canvas></div></div>
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Besparing per complex (€ cumulatief)</div><div class="chart-sub">Totale energiekostenbesparing per woningcomplex jan–jun 2025</div></div><span class="badge b-res">NPA</span></div><div style="position:relative;height:200px"><canvas id="c-r1-complex"></canvas></div></div>
+        </div>
+        <div class="info-box blue"><h4>dVi H02 — Meetmethodiek</h4><p>Besparing per huurder berekend op basis van P4 slimme meter data (kwartierwaarden elektriciteit + gas). Referentiewaarde per complex gecorrigeerd voor woningtype, bezetting en buitentemperatuur (KNMI graaddagenmethode). Tarieven 2025: €0,28/kWh · €1,34/m³. Verantwoording conform dVi-indieningseisen Nationale Prestatieafspraken 2022–2030.</p></div>
+      </div>
+    </section>
+
+    <section id="sec-r2" class="sec">
+      <!-- GEMEENTE VIEW -->
+      <div class="gm-view">
+        <div class="sec-tag">R2 · Output — SiSa M02 / NPHLN / Prestatieafspraken H05</div>
+        <div class="sec-title">Bereik &amp; Participatie</div>
+        <div class="sec-sub" data-i18n="r2.sub">Deelname, gebruikersactiviteit en gedragsresultaten in de EVS-app. Doelgebied: Heerlen-Noord (56.000 bewoners, 14 districten). Totale doelgroep sociale huur: ~30.000 huishoudens.</div>
+        <div class="kpi-grid">
+          <div class="kpi" style="--kpi-c:var(--blue)"><div class="kpi-label">Bereik pilotwijken (SiSa M02)</div><div class="kpi-val">20,2<span class="kpi-unit">%</span></div><div class="kpi-delta pos"><i class="ti ti-users"></i><span>847 van 4.200 uitgenodigden</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">Actief afgelopen maand</div><div class="kpi-val">612<span class="kpi-unit"> huish.</span></div><div class="kpi-delta pos"><i class="ti ti-repeat"></i><span>72,3% retentie na 6 maanden</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">Acties voltooid</div><div class="kpi-val">9.840</div><div class="kpi-delta pos"><i class="ti ti-check"></i><span>Tips, challenges &amp; beloningen</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">Kwetsbare deelname (NPHLN)</div><div class="kpi-val">38<span class="kpi-unit">%</span></div><div class="kpi-delta warn"><i class="ti ti-alert-circle"></i><span>vs 52% niet-kwetsbaar · participatiekloof</span></div></div>
+        </div>
+        <div class="chart-grid g2" style="margin-bottom:14px">
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Conversieverloop — Programma</div><div class="chart-sub">4.200 uitgenodigden → actieve retentie · alle 5 wijken</div></div><span class="badge b-out">SiSa M02</span></div><div class="funnel" style="margin-top:6px" id="funnel-rows"></div></div>
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Actieve huishoudens per maand</div><div class="chart-sub">Alle deelnemers met ≥1 sessie per week · programmatotaal</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge b-out">OUTPUT</span><button class="tab-export-btn" onclick="downloadCSV('participatie')"><i class="ti ti-download" style="font-size:11px"></i> CSV</button></div></div><div style="position:relative;height:190px"><canvas id="c-r2-users"></canvas></div></div>
+        </div>
+        <div class="chart-grid g2" style="margin-bottom:14px">
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Participatie per focuswijk</div><div class="chart-sub">% deelname van uitgenodigde huishoudens per wijk</div></div><span class="badge b-out">OUTPUT</span></div><div style="position:relative;height:200px"><canvas id="c-r2-nbhd"></canvas></div></div>
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Kansgelijkheid: kwetsbaar vs niet-kwetsbaar</div><div class="chart-sub">Participatie per huishoudtype per wijk (NPHLN kansgelijkheid-indicator)</div></div><span class="badge b-out">NPHLN</span></div><div style="position:relative;height:200px"><canvas id="c-r2-equity"></canvas></div></div>
+        </div>
+        <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Retentie cohortanalyse — Programma</div><div class="chart-sub">% actief per maand na instroom · cohorten jan–apr 2025 · alle wijken</div></div><span class="badge b-out">OUTPUT</span></div><table class="cohort"><thead><tr id="cohort-head"></tr></thead><tbody id="cohort-body"></tbody></table></div>
+      </div>
+      <!-- CORPORATION VIEW -->
+      <div class="cp-view">
+        <div class="sec-tag">dVi H04 · Bereik &amp; Participatie — Mijn huurders</div>
+        <div class="sec-title">Huurder Participatie</div>
+        <div class="sec-sub">Deelname en retentie van uw huurders in de EVS-app. Uitsluitend data voor uw eigen portfolio. NPA-doel dVi H04: ≥20% bereik van uitgenodigde huurders.</div>
+        <div class="kpi-grid">
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">dVi H04 · Bereik eigen huurders</div><div class="kpi-val">22,6<span class="kpi-unit">%</span></div><div class="kpi-delta pos"><i class="ti ti-check"></i><span>412 van 1.820 uitgenodigde huurders · NPA ✓</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--blue)"><div class="kpi-label">Actief afgelopen maand</div><div class="kpi-val">298<span class="kpi-unit"> huurders</span></div><div class="kpi-delta pos"><i class="ti ti-repeat"></i><span>72,3% retentie na 6 maanden</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">Acties voltooid</div><div class="kpi-val">4.780</div><div class="kpi-delta pos"><i class="ti ti-check"></i><span>Tips, challenges &amp; beloningen</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">Laagste bereik complex</div><div class="kpi-val">14<span class="kpi-unit">%</span></div><div class="kpi-delta warn"><i class="ti ti-alert-circle"></i><span>Breughelflat — actie aanbevolen</span></div></div>
+        </div>
+        <div class="chart-grid g2" style="margin-bottom:14px">
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Conversieverloop — Mijn portfolio</div><div class="chart-sub">1.820 uitgenodigde huurders → actieve retentie</div></div><span class="badge b-out">dVi H04</span></div><div class="funnel" style="margin-top:6px" id="funnel-rows-cp"></div></div>
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Actieve huurders per maand</div><div class="chart-sub">Huurders in uw portfolio met ≥1 sessie per week</div></div><span class="badge b-out">NPA</span></div><div style="position:relative;height:190px"><canvas id="c-r2-users-cp"></canvas></div></div>
+        </div>
+        <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Participatie per complex — Uw portfolio</div><div class="chart-sub">% actieve huurders van uitgenodigde huurders per woningcomplex</div></div><span class="badge b-out">dVi H04</span></div><div style="position:relative;height:200px"><canvas id="c-r2-complex"></canvas></div></div>
+      </div>
+    </section>
+
+    <section id="sec-r3" class="sec">
+      <!-- GEMEENTE VIEW -->
+      <div class="gm-view">
+        <div class="sec-tag">R3 · Outcome — NPHLN / Overlegwet / Vroegsignalering Wgs (M19)</div>
+        <div class="sec-title">Energiearmoede Detectie</div>
+        <div class="sec-sub">Gedragsmatige detectie van onderverbruik via P4 slimme meters in alle 5 focuswijken. Stad-breed signaalmonitoring voor vroegsignalering schulden (Wgs M19) en beleidsrapportage (NPHLN).</div>
+        <div class="consent"><i class="ti ti-lock"></i><p><strong>Privacybescherming actief.</strong> Huishoud-niveau data uitsluitend zichtbaar na expliciete toestemming van het huishouden. Aggregaties op wijk- en programmaniveau altijd beschikbaar. Beheer: Privacy &amp; Data Governance groep (EVS).</p></div>
+        <div class="kpi-grid">
+          <div class="kpi" style="--kpi-c:var(--red)"><div class="kpi-label">Gesignaleerd programma-breed</div><div class="kpi-val">38<span class="kpi-unit"> huish.</span></div><div class="kpi-delta neg"><i class="ti ti-thermometer"></i><span>Onderverbruik ≥3 opeenvolgende maanden</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">Prevalentie pilotgroep</div><div class="kpi-val">4,5<span class="kpi-unit">%</span></div><div class="kpi-delta warn"><i class="ti ti-building"></i><span>Heerlen-breed: 13,4% energiearmoede</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--red)"><div class="kpi-label">Gem. onderverbruik signaalgroep</div><div class="kpi-val">−41<span class="kpi-unit">%</span></div><div class="kpi-delta neg"><i class="ti ti-trending-down"></i><span>vs normatief verwacht gasverbruik</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--text3)"><div class="kpi-label">Toestemming verleend</div><div class="kpi-val">14<span class="kpi-unit"> / 38</span></div><div class="kpi-delta warn"><i class="ti ti-lock-open"></i><span>24 huishoudens in behandeling</span></div></div>
+        </div>
+        <div class="alert-list" id="alert-list"></div>
+        <div class="chart-grid g2">
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Werkelijk vs normatief verwacht gasverbruik</div><div class="chart-sub">Gem. signaalgroep (38 huish. stad-breed) · m³ gas per maand</div></div><span class="badge b-warn">SIGNAAL</span></div><div style="position:relative;height:220px"><canvas id="c-r3-norm"></canvas></div></div>
+          <div class="chart-card">
+            <div class="chart-head"><div><div class="chart-title">Prevalentie onderverbruik per wijk</div><div class="chart-sub">% huishoudens met aanhoudend signaal per focuswijk (NPHLN)</div></div><span class="badge b-warn">NPHLN</span></div>
+            <div class="heatmap" id="heatmap" style="margin-top:8px"></div>
+            <div style="margin-top:12px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:10px"><span>Laag</span><div style="flex:1;height:4px;border-radius:3px;background:linear-gradient(to right,#A8C8E0,#C0392B)"></div><span>Hoog</span></div>
+          </div>
+        </div>
+        <div class="info-box amber" style="margin-top:14px"><h4>Nationale context — Energiearmoede Nederland 2024</h4><p>119.000 Nederlandse huishoudens hielden bewust de verwarming uit in 2024 (2019: 80.000). Onder lage inkomens in woningen met label E–G steeg onderverbruik van 24% (2021) naar 49% (2024). Heerlen heeft met 13,4% de hoogste energiearmoede in Zuid-Limburg — meer dan tweemaal het nationale gemiddelde van 6,1%. Gemiddelde energierekening voor energy-poor huishoudens: €184/maand (2024), omhoog van €119 in 2023.</p></div>
+      </div>
+      <!-- CORPORATION VIEW -->
+      <div class="cp-view">
+        <div class="sec-tag">dVi H05 · Energiearmoede signalen — Mijn portfolio</div>
+        <div class="sec-title">Huurder Signalen</div>
+        <div class="sec-sub">Onderverbruiksignalen uitsluitend voor uw eigen woningcomplexen. U ziet alleen uw huurders — geen data van andere corporaties of gemeente-brede statistieken.</div>
+        <div class="consent"><i class="ti ti-lock"></i><p><strong>Privacybescherming actief.</strong> Huishoud-niveau data uitsluitend zichtbaar na expliciete toestemming van de huurder. Aggregaties op complexniveau altijd beschikbaar voor uw portfolio. Beheer: Privacy &amp; Data Governance groep (EVS).</p></div>
+        <div class="kpi-grid">
+          <div class="kpi" style="--kpi-c:var(--red)"><div class="kpi-label">dVi H05 · Signalen in portfolio</div><div class="kpi-val">23<span class="kpi-unit"> huurders</span></div><div class="kpi-delta neg"><i class="ti ti-thermometer"></i><span>Onderverbruik ≥3 maanden · uw complexen</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">Prevalentie eigen portfolio</div><div class="kpi-val">5,6<span class="kpi-unit">%</span></div><div class="kpi-delta warn"><i class="ti ti-building"></i><span>Van uw 412 actieve huurders</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--red)"><div class="kpi-label">Gem. onderverbruik signaalgroep</div><div class="kpi-val">−38<span class="kpi-unit">%</span></div><div class="kpi-delta neg"><i class="ti ti-trending-down"></i><span>vs normatief verwacht per complex</span></div></div>
+          <div class="kpi" style="--kpi-c:var(--text3)"><div class="kpi-label">Toestemming verleend</div><div class="kpi-val">9<span class="kpi-unit"> / 23</span></div><div class="kpi-delta warn"><i class="ti ti-lock-open"></i><span>14 huurders nog in behandeling</span></div></div>
+        </div>
+        <div class="alert-list" id="alert-list-cp"></div>
+        <div class="chart-grid g2">
+          <div class="chart-card"><div class="chart-head"><div><div class="chart-title">Werkelijk vs normatief gasverbruik — Portfolio</div><div class="chart-sub">Gem. signaalgroep (23 huurders uw portfolio) · m³ gas per maand</div></div><span class="badge b-warn">dVi H05</span></div><div style="position:relative;height:220px"><canvas id="c-r3-norm-cp"></canvas></div></div>
+          <div class="chart-card">
+            <div class="chart-head"><div><div class="chart-title">Signalen per complex — Uw portfolio</div><div class="chart-sub">% huurders met aanhoudend onderverbruiksignaal per complex</div></div><span class="badge b-warn">dVi H05</span></div>
+            <div class="heatmap" id="heatmap-cp" style="margin-top:8px"></div>
+            <div style="margin-top:12px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:10px"><span>Laag</span><div style="flex:1;height:4px;border-radius:3px;background:linear-gradient(to right,#A8C8E0,#C0392B)"></div><span>Hoog</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-r4" class="sec">
+      <div class="sec-tag" data-i18n="r4.tag">R4 · Output — SiSa / BBV / dVi / Prestatieafspraken</div>
+      <div class="sec-title" data-i18n="r4.title">Beleidsrapportage</div>
+      <div class="sec-sub" data-i18n="r4.sub">Exporteerbare KPI-overzichten in verplichte beleidsformaten. SPUK-verantwoording via SiSa uiterlijk 31 december 2027.</div>
+      <div class="sec-divider" data-i18n="r4.sisa.hdr">SiSa-indicatoren — Gemeente Heerlen</div>
+      <div class="policy-grid">
+        <div class="p-card"><div class="p-tag tag-sisa">SiSa · M01</div><div class="p-val">47.300 kWh</div><div class="p-desc" data-i18n="r4.sisa.m01">Gemeten elektriciteitsreductie t.o.v. weersgecorrigeerde referentiewaarde</div><div class="p-ind" data-i18n="r4.sisa.m01.ind">SPUK Energiearmoede · Cumulatief jan–jun 2025</div></div>
+        <div class="p-card"><div class="p-tag tag-sisa">SiSa · M02</div><div class="p-val">847</div><div class="p-desc" data-i18n="r4.sisa.m02">Bereikte huishoudens met energiegedragsinterventie via EVS-app</div><div class="p-ind" data-i18n="r4.sisa.m02.ind">SPUK-bereik · Pilotfase 2025</div></div>
+        <div class="p-card"><div class="p-tag tag-sisa">SiSa · M03</div><div class="p-val">38</div><div class="p-desc" data-i18n="r4.sisa.m03">Huishoudens gescreend op gedragsmatig energiearmoede-signaal</div><div class="p-ind" data-i18n="r4.sisa.m03.ind">Deadline: 31 december 2027</div></div>
+      </div>
+      <div class="sec-divider" data-i18n="r4.dvi.hdr">dVi-indicatoren — Woningcorporaties</div>
+      <div class="policy-grid">
+        <div class="p-card"><div class="p-tag tag-dvi">dVi · H02</div><div class="p-val">6,1%</div><div class="p-desc" data-i18n="r4.dvi.h02">Reductie energiekosten t.o.v. baseline per deelnemend huishouden</div><div class="p-ind" data-i18n="r4.dvi.h02.ind">Woonpunt · Weller · Vincio Wonen</div></div>
+        <div class="p-card"><div class="p-tag tag-dvi">dVi · H04</div><div class="p-val">20,2%</div><div class="p-desc" data-i18n="r4.dvi.h04">Bereik: aandeel uitgenodigde huurders dat actief deelnam</div><div class="p-ind" data-i18n="r4.dvi.h04.ind">Nationale Prestatieafspraken · 2025</div></div>
+        <div class="p-card"><div class="p-tag tag-dvi">dVi · H05</div><div class="p-val">4,5%</div><div class="p-desc" data-i18n="r4.dvi.h05">Prevalentie gedragsmatig energiearmoede-signaal per complex-portfolio</div><div class="p-ind" data-i18n="r4.dvi.h05.ind">Heerlen Prestatieafspraken</div></div>
+      </div>
+      <div class="sec-divider" data-i18n="r4.bbv.hdr">BBV Besparingsrendement</div>
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:14px;margin-bottom:22px">
+        <div class="p-card"><div class="p-tag tag-bbv">BBV · Effect ratio</div><div class="p-val">1 : 2,8</div><div class="p-desc" data-i18n="r4.bbv.desc">Per €1 programmakosten → €2,80 gerealiseerde kostenbesparing</div><div class="p-ind" data-i18n="r4.bbv.ind">BBV raadsverantwoording</div></div>
+        <div class="info-box blue"><h4 data-i18n="r4.method.hdr">SPUK-verantwoording</h4><p data-i18n="r4.method.body">Gemeente Heerlen heeft €2.230.450 SPUK-middelen voor Energiearmoede gereserveerd voor focuswijken in Heerlen-Noord, plus €400.000 voor huishoudens op 130–175% sociaal minimum en €50.000 boven 175%. Verantwoording via SiSa uiterlijk 31 december 2027. EVS-drempel: ≥5% energiekostenreductie per deelnemend huishouden.</p></div>
+      </div>
+      <div class="export-row">
+        <button class="export-btn" onclick="window.open('report.html?role='+(currentRole||'gemeente'),'_blank')"><i class="ti ti-file-type-pdf"></i><span data-i18n="exp.pdf">PDF-rapport</span></button>
+        <button class="export-btn" onclick="alert('Excel exporteren...')"><i class="ti ti-file-spreadsheet"></i><span data-i18n="exp.xls">Excel</span></button>
+        <button class="export-btn" onclick="alert('CSV exporteren...')"><i class="ti ti-file-text"></i><span data-i18n="exp.csv">CSV</span></button>
+        <button class="export-btn" onclick="alert('SiSa XML genereren...')"><i class="ti ti-code"></i><span data-i18n="exp.xml">SiSa XML</span></button>
+      </div>
+    </section>
+
+    <section id="sec-r5" class="sec">
+      <div class="sec-tag" data-i18n="r5.tag">R5 · Impact — NPHLN / Coalitieakkoord Heerlen / Regionale Prestatieafspraken</div>
+      <div class="sec-title" data-i18n="r5.title">Buurttrends &amp; Regionale Context</div>
+      <div class="sec-sub" data-i18n="r5.sub">Indicatorontwikkeling op wijkniveau en vergelijking binnen Zuid-Limburg. Jaar-op-jaar trend volgt na het eerste volledige pilotjaar.</div>
+      <div class="stat-row">
+        <div class="stat-item"><div class="stat-icon" style="background:var(--red-dim);color:var(--red)"><i class="ti ti-building"></i></div><div><div class="stat-val">13,4%</div><div class="stat-lbl" data-i18n="r5.s1">Energiearmoede Heerlen (2024)</div></div></div>
+        <div class="stat-item"><div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)"><i class="ti ti-map-pin"></i></div><div><div class="stat-val">56.000</div><div class="stat-lbl" data-i18n="r5.s2">Bewoners Heerlen-Noord · 14 districten</div></div></div>
+        <div class="stat-item"><div class="stat-icon" style="background:var(--amber-dim);color:var(--amber)"><i class="ti ti-coin"></i></div><div><div class="stat-val">€184/mnd</div><div class="stat-lbl" data-i18n="r5.s3">Gem. energierekening energy-poor (2024)</div></div></div>
+        <div class="stat-item"><div class="stat-icon" style="background:var(--teal-dim);color:var(--teal)"><i class="ti ti-calendar"></i></div><div><div class="stat-val">31 dec 2027</div><div class="stat-lbl" data-i18n="r5.s4">SPUK SiSa-deadline</div></div></div>
+      </div>
+      <div class="chart-card" style="margin-bottom:14px">
+        <div class="chart-head"><div><div class="chart-title" data-i18n="r5.c1.title">Energiearmoede per gemeente — Zuid-Limburg 2024</div><div class="chart-sub" data-i18n="r5.c1.sub">% huishoudens in energiearmoede · Nationaal gemiddelde: 6,1%</div></div><span class="badge b-imp">IMPACT</span></div>
+        <div style="position:relative;height:220px"><canvas id="c-r5-region"></canvas></div>
+      </div>
+      <div class="chart-grid g2">
+        <div class="chart-card"><div class="chart-head"><div><div class="chart-title" data-i18n="r5.c2.title">Kernindicatoren over tijd — Pilotwijken 2025</div><div class="chart-sub" data-i18n="r5.c2.sub">Participatie, kostenbesparing en signaalprevalentie</div></div><span class="badge b-imp">IMPACT</span></div><div style="position:relative;height:220px"><canvas id="c-r5-trends"></canvas></div><div class="legend"><span><span class="l-line" style="background:var(--blue)"></span><span data-i18n="r5.leg1">Participatie (%) — links</span></span><span><span class="l-line" style="background:var(--teal)"></span><span data-i18n="r5.leg2">Kostenbesparing (%) — rechts</span></span><span><span class="l-line" style="background:var(--red)"></span><span data-i18n="r5.leg3">Signaalprevalentie (%) — rechts</span></span></div></div>
+        <div class="chart-card"><div class="chart-head"><div><div class="chart-title" data-i18n="r5.c3.title">Participatie per focuswijk</div><div class="chart-sub" data-i18n="r5.c3.sub">% bereik van uitgenodigde huishoudens — jan t/m jun 2025</div></div><span class="badge b-imp">IMPACT</span></div><div style="position:relative;height:220px"><canvas id="c-r5-nbhd"></canvas></div></div>
+      </div>
+    </section>
+
+    <section id="sec-dvi" class="sec">
+      <div class="sec-tag">Woningcorporatie · dVi Indicatoren · Nationale Prestatieafspraken</div>
+      <div class="sec-title">dVi Rapportage</div>
+      <div class="sec-sub">Prestatie-indicatoren voor woningcorporaties conform dVi-verantwoording en Nationale Prestatieafspraken 2022–2030.</div>
+      <div class="kpi-grid">
+        <div class="kpi" style="--kpi-c:var(--teal)"><div class="kpi-label">dVi H02 · Energiekosten­reductie</div><div class="kpi-val">€168</div><div class="kpi-delta pos"><i class="ti ti-check"></i><span>Per deelnemend huishouden · jan–jun 2025</span></div></div>
+        <div class="kpi" style="--kpi-c:var(--amber)"><div class="kpi-label">dVi H04 · Bereikpercentage</div><div class="kpi-val">22,6<span class="kpi-unit">%</span></div><div class="kpi-delta pos"><i class="ti ti-trending-up"></i><span>NPA-doel ≥20% · Behaald ✓</span></div></div>
+        <div class="kpi" style="--kpi-c:var(--red)"><div class="kpi-label">dVi H05 · Armoedeprevalentie</div><div class="kpi-val">5,6<span class="kpi-unit">%</span></div><div class="kpi-delta warn"><i class="ti ti-alert-circle"></i><span>23 huish. in portfolio met signaal</span></div></div>
+      </div>
+      <div class="policy-grid" style="margin-top:4px">
+        <div class="p-card"><span class="p-tag tag-dvi">dVi H02</span>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Energiekostenreductie per huurder</div>
+          <div style="font-size:28px;font-weight:700;color:var(--teal);margin-bottom:4px">€168 <span style="font-size:14px;color:var(--text3)">/huishouden</span></div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Gemiddelde besparing op gas + elektriciteit voor deelnemende huurders in de pilotfase jan–jun 2025.</div>
+          <div style="font-size:11px;color:var(--text3)">Woonpunt: €182 · Weller: €159 · Vincio: €163</div>
+        </div>
+        <div class="p-card"><span class="p-tag tag-dvi">dVi H04</span>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Bereikpercentage uitgenodigde huurders</div>
+          <div style="font-size:28px;font-weight:700;color:var(--amber);margin-bottom:4px">22,6% <span style="font-size:14px;color:var(--text3)">van uitgenodigden</span></div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">412 van 1.820 uitgenodigde huurders actief ingeschreven. NPA-doel van ≥20% bereikt.</div>
+          <div style="font-size:11px;color:var(--text3)">Woonpunt: 25,4% · Weller: 21,1% · Vincio: 19,8%</div>
+        </div>
+        <div class="p-card"><span class="p-tag tag-dvi">dVi H05</span>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Armoedesignaalprevalentie portfolio</div>
+          <div style="font-size:28px;font-weight:700;color:var(--red);margin-bottom:4px">5,6% <span style="font-size:14px;color:var(--text3)">van portfolio</span></div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">23 huurders met aanhoudend onderverbruikssignaal (≥3 maanden). Actieve opvolging via EVS-signaalmodule.</div>
+          <div style="font-size:11px;color:var(--text3)">Vrieheide: 8 · Breitnerstr.: 9 · Overig: 6</div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-top:4px">
+        <div class="chart-head"><div><div class="chart-title">Participatie per complex — Mijn portfolio</div><div class="chart-sub">% actieve huurders van uitgenodigde huurders per woningcomplex</div></div></div>
+        <div style="display:grid;gap:10px;margin-top:4px">
+          <div style="display:flex;align-items:center;gap:12px"><div style="width:160px;font-size:12px;color:var(--text);font-weight:500;flex-shrink:0">De Wingerd (Woonpunt)</div><div style="width:70px;font-size:11px;color:var(--text3);flex-shrink:0">Schuttersweide</div><div style="flex:1;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:78.4%;background:#6A8EAE;border-radius:4px"></div></div><div style="font-size:12px;font-weight:700;color:#6A8EAE;width:36px;text-align:right">28%</div></div>
+          <div style="display:flex;align-items:center;gap:12px"><div style="width:160px;font-size:12px;color:var(--text);font-weight:500;flex-shrink:0">Breughelflat (Woonpunt)</div><div style="width:70px;font-size:11px;color:var(--text3);flex-shrink:0">P. Breughelstr.</div><div style="flex:1;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:39.2%;background:#C47F17;border-radius:4px"></div></div><div style="font-size:12px;font-weight:700;color:#C47F17;width:36px;text-align:right">14%</div></div>
+          <div style="display:flex;align-items:center;gap:12px"><div style="width:160px;font-size:12px;color:var(--text);font-weight:500;flex-shrink:0">Atelierwoningen (Weller)</div><div style="width:70px;font-size:11px;color:var(--text3);flex-shrink:0">Ferd. Bolstr.</div><div style="flex:1;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:86.8%;background:#6A8EAE;border-radius:4px"></div></div><div style="font-size:12px;font-weight:700;color:#6A8EAE;width:36px;text-align:right">31%</div></div>
+          <div style="display:flex;align-items:center;gap:12px"><div style="width:160px;font-size:12px;color:var(--text);font-weight:500;flex-shrink:0">Vrieheideblok A (Weller)</div><div style="width:70px;font-size:11px;color:var(--text3);flex-shrink:0">Vrieheide</div><div style="flex:1;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:61.6%;background:#6A8EAE;border-radius:4px"></div></div><div style="font-size:12px;font-weight:700;color:#6A8EAE;width:36px;text-align:right">22%</div></div>
+          <div style="display:flex;align-items:center;gap:12px"><div style="width:160px;font-size:12px;color:var(--text);font-weight:500;flex-shrink:0">Breitnercomplex (Vincio)</div><div style="width:70px;font-size:11px;color:var(--text3);flex-shrink:0">Breitnerstr.</div><div style="flex:1;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:47.6%;background:#C47F17;border-radius:4px"></div></div><div style="font-size:12px;font-weight:700;color:#C47F17;width:36px;text-align:right">17%</div></div>
+          <div style="display:flex;align-items:center;gap:12px"><div style="width:160px;font-size:12px;color:var(--text);font-weight:500;flex-shrink:0">Lindenhof (Vincio)</div><div style="width:70px;font-size:11px;color:var(--text3);flex-shrink:0">Schuttersweide</div><div style="flex:1;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:70%;background:#6A8EAE;border-radius:4px"></div></div><div style="font-size:12px;font-weight:700;color:#6A8EAE;width:36px;text-align:right">25%</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-map" class="sec">
+      <div class="sec-tag">Live · Wijkkaart — Huisniveau</div>
+      <div class="sec-title">Heerlen-Noord — Interactieve Kaart</div>
+      <div class="sec-sub">Individuele huishoudens weergegeven per adres. Klik op een huis voor details. Zoom in voor straatniveau.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="map-live-badge" style="margin-bottom:0"><span class="map-live-dot"></span>325 huishoudens · jun 2025</div>
+        <div style="display:flex;gap:6px">
+          <button class="map-layer-btn active" data-layer="participation" onclick="setMapLayer('participation')"><i class="ti ti-users" style="font-size:11px"></i> Participatie</button>
+          <button class="map-layer-btn" data-layer="savings" onclick="setMapLayer('savings')"><i class="ti ti-coin" style="font-size:11px"></i> Besparing</button>
+          <button class="map-layer-btn" data-layer="poverty" onclick="setMapLayer('poverty')"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Energiearmoede</button>
+        </div>
+      </div>
+      <div id="map-wrap">
+        <div id="leaflet-map"></div>
+        <aside class="map-sidebar">
+          <div id="nbhd-cards"></div>
+          <div class="map-legend">
+            <div class="map-legend-title">Legenda</div>
+            <div id="map-legend-items"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ── METHODOLOGIE & DATA ───────────────────────────── -->
+    <section id="sec-methodo" class="sec">
+      <div class="sec-tag">Transparantie · Berekeningen &amp; Ruwe Data</div>
+      <div class="sec-title">Methodologie &amp; Data</div>
+      <div class="sec-sub">Hoe elke metriek wordt berekend, welke aannames er zijn gemaakt, en hoe u de ruwe data zelf kunt downloaden voor eigen analyse.</div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-bottom:28px">
+
+        <div class="mth-card"><div class="mth-head"><i class="ti ti-flame"></i><span>Gasbesparing (m³)</span><span class="mth-badge">SiSa M01</span></div><div class="mth-formula">Besparing = Baseline<sub>gecorrigeerd</sub> − Werkelijk verbruik</div><div class="mth-body"><p><strong>Baseline:</strong> Normatief verbruik op basis van woningtype, oppervlak en bezetting, gecorrigeerd voor buitentemperatuur via de KNMI graaddagenmethode (meetstation Heerlen, 18°C stookgrens).</p><p><strong>Werkelijk verbruik:</strong> P4 slimme meter kwartierwaarden (m³), aangeleverd door Enexis netbeheerder.</p><p><strong>Aggregatie:</strong> Mediaan per wijk per maand (robuust voor uitschieters).</p></div><div class="mth-assum"><i class="ti ti-info-circle"></i> Aanname: stookgrens 18°C. Geen correctie voor woningisolatie in pilotfase 1.</div></div>
+
+        <div class="mth-card"><div class="mth-head"><i class="ti ti-bolt"></i><span>Elektriciteitsbesparing (kWh)</span><span class="mth-badge">SiSa M01</span></div><div class="mth-formula">Besparing = Baseline<sub>profiel</sub> − Werkelijk verbruik</div><div class="mth-body"><p><strong>Baseline:</strong> Historisch verbruiksprofiel 2022–2023 gecorrigeerd voor huishoudgrootte en seizoenspatroon. Geen temperatuurcorrectie voor elektriciteit.</p><p><strong>Werkelijk verbruik:</strong> P4 kwartierwaarden (kWh), teruggerekend naar dagwaarden.</p><p><strong>Aggregatie:</strong> Gemiddelde per huishouden, gesommeerd naar wijkniveau.</p></div><div class="mth-assum"><i class="ti ti-info-circle"></i> Aanname: huishoudprofiel stabiel t.o.v. 2022–2023. Geen correctie voor nieuwe apparaten of zonnepanelen.</div></div>
+
+        <div class="mth-card"><div class="mth-head"><i class="ti ti-coin"></i><span>Kostenbesparing (€)</span><span class="mth-badge">BBV</span></div><div class="mth-formula">Kosten = (∆Gas × €1,34/m³) + (∆Elektr. × €0,28/kWh)</div><div class="mth-body"><p><strong>Tarieven 2025:</strong> Gemiddeld variabel leveringstarief inclusief energiebelasting, exclusief netbeheerkosten (vaste component niet beïnvloedbaar door gedrag).</p><p><strong>BBV ratio:</strong> Totale programmakost gedeeld door cumulatieve kostenbesparing voor alle deelnemers.</p></div><div class="mth-assum"><i class="ti ti-info-circle"></i> Aanname: alle deelnemers betalen het gemiddeld variabel tarief. Saldering zonnepanelen buiten scope.</div></div>
+
+        <div class="mth-card"><div class="mth-head"><i class="ti ti-leaf"></i><span>CO₂-reductie (kg)</span><span class="mth-badge">Klimaatakkoord</span></div><div class="mth-formula">CO₂ = (∆Gas × 1,89 kg/m³) + (∆Elektr. × 0,25 kg/kWh)</div><div class="mth-body"><p><strong>Gas:</strong> 1,89 kg CO₂/m³ (aardgas, lager stookwaarde, incl. winning &amp; transport — CE Delft 2024).</p><p><strong>Elektriciteit:</strong> 0,25 kg CO₂/kWh (NL netgemiddelde 2024 — CBS Statline). Fluctueert met aandeel hernieuwbaar; jaarlijks geactualiseerd.</p></div><div class="mth-assum"><i class="ti ti-info-circle"></i> Aanname: emissiefactor elektriciteit representatief voor verbruiksmoment. Geen tijdgewogen marginale factor.</div></div>
+
+        <div class="mth-card"><div class="mth-head"><i class="ti ti-users"></i><span>Bereik &amp; Participatie (%)</span><span class="mth-badge">SiSa M02</span></div><div class="mth-formula">Bereik = Actieve gebruikers / Uitgenodigde huishoudens × 100</div><div class="mth-body"><p><strong>Actief:</strong> Minimaal 1 app-sessie per week gedurende ≥4 aaneengesloten weken.</p><p><strong>Retentie:</strong> Percentage actieve gebruikers dat na 6 maanden nog steeds actief is (rolling 4-weeks window).</p></div><div class="mth-assum"><i class="ti ti-info-circle"></i> Aanname: 1 account = 1 huishouden. Meerpersoons-accounts worden niet gesplitst.</div></div>
+
+        <div class="mth-card"><div class="mth-head"><i class="ti ti-alert-triangle"></i><span>Energiearmoede signaal</span><span class="mth-badge">Wgs M19 / dVi H05</span></div><div class="mth-formula">Signaal als verbruik &lt; 40% normatief én ≥ 3 opeenvolgende maanden</div><div class="mth-body"><p><strong>Drempel:</strong> &lt;40% van normatief verbruik voor dit woningtype en seizoen, aanhoudend ≥3 maanden.</p><p><strong>Privacy:</strong> Signalering op wijk-/complexniveau standaard. Huishoudniveau uitsluitend na expliciete AVG-toestemming (art. 6.1a).</p><p><strong>Wgs M19:</strong> Vroegsignalering schulden via combinatie energiearmoede + betalingsachterstand.</p></div><div class="mth-assum"><i class="ti ti-info-circle"></i> Aanname: onderverbruik ≠ altijd armoede. Efficiënte woningen of langdurige afwezigheid kunnen ook laag verbruik verklaren. Verificatie via huisbezoek.</div></div>
+
+      </div>
+
+      <!-- Raw data downloads -->
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:24px 0 12px;padding-left:10px;border-left:3px solid var(--teal)">Ruwe data downloaden</div>
+      <div style="background:rgba(196,127,23,.10);border:1px solid rgba(196,127,23,.35);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start;max-width:720px">
+        <i class="ti ti-shield-lock" style="font-size:20px;color:#C47F17;flex-shrink:0;margin-top:1px"></i>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#C47F17;margin-bottom:4px">Privacy-drempel van toepassing (AVG / GDPR)</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.6">Rijen met minder dan <strong>10 huishoudens per postcode-6</strong> zijn weggelaten uit alle exports. Zo worden persoonsidentificeerbare gegevens beschermd. Huishoudniveau-data (kwartierwaarden per aansluiting) vereist een ondertekend <strong>data-verwerkersovereenkomst</strong> — neem contact op via <strong>evs-data@heerlen.nl</strong>.</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">
+        <div class="dl-card"><div class="dl-icon"><i class="ti ti-flame"></i></div><div class="dl-info"><div class="dl-name">Energieverbruik per wijk</div><div class="dl-meta">Maandwaarden gas &amp; elektr. · jan–jun 2025 · Wijkniveau</div></div><div class="dl-btns"><button class="dl-btn" onclick="downloadCSV('energy_per_wijk')">CSV</button><button class="dl-btn" onclick="downloadJSON('energy_per_wijk')">JSON</button></div></div>
+        <div class="dl-card"><div class="dl-icon"><i class="ti ti-users"></i></div><div class="dl-info"><div class="dl-name">Participatie &amp; Funnel</div><div class="dl-meta">Maandelijkse actieve gebruikers, uitnodigingen, retentie</div></div><div class="dl-btns"><button class="dl-btn" onclick="downloadCSV('participatie')">CSV</button><button class="dl-btn" onclick="downloadJSON('participatie')">JSON</button></div></div>
+        <div class="dl-card"><div class="dl-icon"><i class="ti ti-alert-triangle"></i></div><div class="dl-info"><div class="dl-name">Energiearmoede signalen</div><div class="dl-meta">Signaalprevalentie per wijk · Geaggregeerd · AVG-compliant</div></div><div class="dl-btns"><button class="dl-btn" onclick="downloadCSV('armoede')">CSV</button><button class="dl-btn" onclick="downloadJSON('armoede')">JSON</button></div></div>
+        <div class="dl-card"><div class="dl-icon"><i class="ti ti-chart-bar"></i></div><div class="dl-info"><div class="dl-name">Referentiewaarden &amp; Besparingen</div><div class="dl-meta">Weersgecorrigeerde referentiewaarde vs. werkelijk verbruik · Per maand</div></div><div class="dl-btns"><button class="dl-btn" onclick="downloadCSV('baseline')">CSV</button><button class="dl-btn" onclick="downloadJSON('baseline')">JSON</button></div></div>
+        <div class="dl-card"><div class="dl-icon"><i class="ti ti-map-pin"></i></div><div class="dl-info"><div class="dl-name">Wijkkaart dataset</div><div class="dl-meta">GeoJSON met participatie, armoede &amp; besparingsindicatoren per wijk</div></div><div class="dl-btns"><button class="dl-btn" onclick="downloadJSON('geo')">GeoJSON</button><button class="dl-btn" onclick="downloadCSV('geo')">CSV</button></div></div>
+        <div class="dl-card dl-card-locked"><div class="dl-icon"><i class="ti ti-lock"></i></div><div class="dl-info"><div class="dl-name">Huishoud-niveau data</div><div class="dl-meta">Kwartierwaarden per aansluiting · Vereist DVA + expliciete toestemming</div></div><div class="dl-btns"><button class="dl-btn dl-btn-lock" onclick="alert('Neem contact op via evs-data@heerlen.nl voor toegang tot huishoud-niveau data.')">Aanvragen</button></div></div>
+      </div>
+
+      <div style="background:var(--teal-dim);border:1px solid var(--border);border-radius:8px;padding:14px 18px;font-size:11.5px;color:var(--text2);max-width:680px">
+        <strong style="color:var(--text)">Citeerrichtlijn voor onderzoekers:</strong><br>
+        Gemeente Heerlen / EVS Monitor (2025). <em>Energieverdienspel Pilotfase Dataset — Heerlen-Noord, januari–juni 2025.</em> Beschikbaar via EVS Data Portal. DOI-toewijzing in voorbereiding (Pilotfase 2).
+      </div>
+    </section>
+
+  </main>
+</div>
+</div>
+
+<script>
+const T={
+nl:{
+  'sb.sub':'Gemeente Heerlen · Heerlen-Noord','sb.sect.ov':'Overzicht','sb.sect.req':'Vereisten',
+  'nav.dashboard':'Dashboard','nav.r1':'Energiebesparing','nav.r2':'Bereik & Participatie',
+  'nav.r3':'Energiearmoede','nav.r4':'Beleidsrapportage','nav.r5':'Buurttrends',
+  'sb.footer':'Pilotfase · jan–jun 2025','tb.period':'Periode','tb.corp':'Corporatie','unit.hh':' huish.',
+  'ov.tag':'Energieverdienspel · Gemeente Heerlen','ov.title':'Dashboard Overzicht',
+  'ov.sub':'Beleids- en impactmonitoring voor Gemeente Heerlen en woningcorporaties. Pilotfase januari–juni 2025 in vijf focuswijken van Heerlen-Noord (56.000 bewoners, 14 districten, 13,4% energiearmoede — hoogste van Nederland).',
+  'ov.k1.lbl':'Uitgenodigde huishoudens','ov.k1.d':'Vijf focuswijken Heerlen-Noord',
+  'ov.k2.lbl':'Ingeschreven (EVS)','ov.k2.d':'20,2% bereik pilotgroep',
+  'ov.k3.lbl':'Energiekostenreductie','ov.k3.d':'Boven drempel van 5%',
+  'ov.k4.lbl':'Kostenbesparing','ov.k4.d':'Gas + elektriciteit · jan–jun 2025',
+  'ov.k5.lbl':'CO₂ vermeden','ov.k5.d':'Elektriciteit + gas gecombineerd',
+  'ov.k6.lbl':'Energiearmoede signalen','ov.k6.d':'4,5% van pilotgroep',
+  'ov.tbl.title':'Vereistenstatus — Pilotfase 2025','ov.tbl.sub':'Voortgang per Must Have monitoringsvereiste',
+  'th.req':'Vereiste','th.desc':'Omschrijving','th.policy':'Beleidskader','th.status':'Status','th.phase':'Fase',
+  'r1.tag':'R1 · Outcome — SPUK / SiSa M01 / BBV / dVi H02','r1.title':'Energiebesparing',
+  'r1.sub':'Gemeten reductie in elektriciteitsverbruik (kWh) en gasverbruik (m³) ten opzichte van een weersgecorrigeerde referentiewaarde. Tarieven 2025: €0,28/kWh en €1,34/m³.',
+  'r1.k1.lbl':'Elektriciteitsbesparing','r1.k1.d':'Cumulatief jan–jun 2025',
+  'r1.k2.lbl':'Gasbesparing','r1.k2.d':'Cumulatief jan–jun 2025',
+  'r1.k3.lbl':'Totale kostenbesparing','r1.k3.d':'Gas €5.146 + elektriciteit €13.244',
+  'r1.k4.lbl':'BBV effect ratio','r1.k4.d':'€1 programmakost → €2,80 besparing',
+  'r1.c1.title':'Gasverbruik: werkelijk vs referentiewaarde — jan t/m jun 2025',
+  'r1.c1.sub':'m³ per maand (gemiddeld per deelnemer) · Weersgecorrigeerd via graaddagenmethode (KNMI)',
+  'r1.c2.title':'Maandelijkse kostenbesparing (€)','r1.c2.sub':'Gas + elektriciteit · alle deelnemers',
+  'r1.c3.title':'CO₂ vermeden per maand (kg)','r1.c3.sub':'Gas: 1,89 kg/m³ · Elektriciteit: 0,25 kg/kWh',
+  'leg.baseline':'Referentie (verwacht)','leg.actual.gas':'Werkelijk gas (m³)','leg.actual.elec':'Werkelijk elektr. (kWh/10)',
+  'r1.method.hdr':'Meetmethodiek','r1.method.body':'Referentiewaarde bepaald via graaddagenmethode (KNMI-data, station Heerlen). Werkelijk verbruik via P4 slimme meters (kwartierwaarden elektriciteit en gas). Controlegroep wordt opgezet in de volgende pilotfase. Tarieven 2025: €0,28/kWh · €1,34/m³.',
+  'r2.tag':'R2 · Output — SiSa M02 / NPHLN / Prestatieafspraken H05','r2.title':'Bereik & Participatie',
+  'r2.sub':'Deelname, gebruikersactiviteit en gedragsresultaten in de EVS-app. Doelgebied: Heerlen-Noord (56.000 bewoners, 14 districten). Totale doelgroep sociale huur: ~30.000 huishoudens.',
+  'r2.k1.lbl':'Bereik pilotwijken','r2.k1.d':'847 van 4.200 uitgenodigden',
+  'r2.k2.lbl':'Actief afgelopen maand','r2.k2.d':'72,3% retentie na 6 maanden',
+  'r2.k3.lbl':'Acties voltooid','r2.k3.d':'Tips, challenges & beloningen',
+  'r2.k4.lbl':'Kwetsbare deelname','r2.k4.d':'vs 52% niet-kwetsbaar · participatiekloof',
+  'r2.c1.title':'Conversieverloop','r2.c1.sub':'Van uitnodiging tot actieve retentie',
+  'r2.c2.title':'Actieve huishoudens per maand','r2.c2.sub':'Huishoudens met ≥1 sessie per week',
+  'r2.c3.title':'Participatie per wijk','r2.c3.sub':'% deelname van uitgenodigde huishoudens',
+  'r2.c4.title':'Kansgelijkheid: kwetsbaar vs niet-kwetsbaar','r2.c4.sub':'Participatie per huishoudtype per wijk (NPHLN)',
+  'r2.c5.title':'Retentie cohortanalyse','r2.c5.sub':'% actief per maand na instroom — cohorten jan t/m apr 2025',
+  'cohort.hdr':['Cohort','Maand 1','Maand 2','Maand 3','Maand 4','Maand 5','Maand 6'],
+  'funnel.labels':['Uitgenodigd','Geregistreerd','Actief ≥1×/wk','Retentie 6 mnd'],
+  'r3.tag':'R3 · Outcome — NPHLN / Overlegwet / Vroegsignalering Wgs (M19)','r3.title':'Energiearmoede Detectie',
+  'r3.sub':'Gedragsmatige detectie van onderverbruik via P4 slimme meters. Afwijking van normatief verwacht verbruik op basis van woningtype, bezetting en buitentemperatuur.',
+  'r3.consent.bold':'Privacybescherming actief.',
+  'r3.consent.body':'Huishoud-niveau data is uitsluitend zichtbaar na expliciete toestemming. Aggregaties op wijk- en complexniveau zijn altijd beschikbaar. Beheer: Privacy & Data Governance groep (EVS).',
+  'r3.k1.lbl':'Gesignaleerde huishoudens','r3.k1.d':'Onderverbruik ≥3 opeenvolgende maanden',
+  'r3.k2.lbl':'Prevalentie pilotgroep','r3.k2.d':'Heerlen-breed: 13,4% energiearmoede',
+  'r3.k3.lbl':'Gem. onderverbruik','r3.k3.d':'vs normatief verwacht gasverbruik',
+  'r3.k4.lbl':'Toestemming verleend','r3.k4.d':'24 huishoudens in behandeling',
+  'r3.c1.title':'Werkelijk vs normatief verwacht gasverbruik','r3.c1.sub':'Gemiddelde signaalgroep (38 huish.) · m³ gas per maand',
+  'r3.c2.title':'Prevalentie onderverbruik per wijk','r3.c2.sub':'% huishoudens met aanhoudend onderverbruiksignaal',
+  'badge.signal':'SIGNAAL','hm.low':'Laag','hm.high':'Hoog',
+  'r3.context.hdr':'Nationale context — Energiearmoede Nederland 2024',
+  'r3.context.body':'119.000 Nederlandse huishoudens hielden bewust de verwarming uit in 2024 (2019: 80.000). Onder lage inkomens in woningen met label E–G steeg onderverbruik van 24% (2021) naar 49% (2024). Heerlen heeft met 13,4% de hoogste energiearmoede in Zuid-Limburg — meer dan tweemaal het nationale gemiddelde van 6,1%. Gemiddelde energierekening voor energy-poor huishoudens: €184/maand (2024), omhoog van €119 in 2023.',
+  'alerts':[
+    {title:'Cluster 15 huishoudens — Vrieheide-De Stack',desc:'Gasverbruik >45% onder normatief voor ≥3 maanden. Complex met energielabels E–F. Mogelijke onderstoking; toestemming vereist.',btn:'Toestemming aanvragen',warn:false},
+    {title:'11 huishoudens — Schuttersweide (gestapeld)',desc:'Onderverbruikspatroon in appartementencomplex. Correlatie met vroegsignalering schulden (Wgs M19).',btn:'Toestemming aanvragen',warn:false},
+    {title:'12 huishoudens — Overig Heerlen-Noord',desc:'Laag verbruik zonder eenduidig patroon. Mogelijke energie-efficiënte woningen of langdurige afwezigheid. Monitoring loopt.',btn:'Details bekijken',warn:true}
+  ],
+  'r4.tag':'R4 · Output — SiSa / BBV / dVi / Prestatieafspraken','r4.title':'Beleidsrapportage',
+  'r4.sub':'Exporteerbare KPI-overzichten in verplichte beleidsformaten. SPUK-verantwoording via SiSa uiterlijk 31 december 2027.',
+  'r4.sisa.hdr':'SiSa-indicatoren — Gemeente Heerlen',
+  'r4.sisa.m01':'Gemeten elektriciteitsreductie t.o.v. weersgecorrigeerde referentiewaarde',
+  'r4.sisa.m01.ind':'SPUK Energiearmoede · Cumulatief jan–jun 2025',
+  'r4.sisa.m02':'Bereikte huishoudens met energiegedragsinterventie via EVS-app',
+  'r4.sisa.m02.ind':'SPUK-bereik · Pilotfase 2025',
+  'r4.sisa.m03':'Huishoudens gescreend op gedragsmatig energiearmoede-signaal',
+  'r4.sisa.m03.ind':'Deadline: 31 december 2027',
+  'r4.dvi.hdr':'dVi-indicatoren — Woningcorporaties',
+  'r4.dvi.h02':'Reductie energiekosten t.o.v. referentiewaarde per deelnemend huishouden',
+  'r4.dvi.h02.ind':'Woonpunt · Weller · Vincio Wonen',
+  'r4.dvi.h04':'Bereik: aandeel uitgenodigde huurders dat actief deelnam',
+  'r4.dvi.h04.ind':'Nationale Prestatieafspraken · 2025',
+  'r4.dvi.h05':'Prevalentie gedragsmatig energiearmoede-signaal per complex-portfolio',
+  'r4.dvi.h05.ind':'Heerlen Prestatieafspraken',
+  'r4.bbv.hdr':'BBV Besparingsrendement',
+  'r4.bbv.desc':'Per €1 programmakosten → €2,80 gerealiseerde kostenbesparing',
+  'r4.bbv.ind':'BBV raadsverantwoording',
+  'r4.method.hdr':'SPUK-verantwoording',
+  'r4.method.body':'Gemeente Heerlen heeft €2.230.450 SPUK-middelen voor Energiearmoede gereserveerd voor focuswijken in Heerlen-Noord, plus €400.000 voor huishoudens op 130–175% sociaal minimum en €50.000 boven 175%. Verantwoording via SiSa uiterlijk 31 december 2027. EVS-drempel: ≥5% energiekostenreductie per deelnemend huishouden.',
+  'exp.pdf':'PDF-rapport','exp.xls':'Excel','exp.csv':'CSV','exp.xml':'SiSa XML',
+  'r5.tag':'R5 · Impact — NPHLN / Coalitieakkoord Heerlen / Regionale Prestatieafspraken','r5.title':'Buurttrends & Regionale Context',
+  'r5.sub':'Indicatorontwikkeling op wijkniveau en vergelijking binnen Zuid-Limburg. Jaar-op-jaar trend volgt na het eerste volledige pilotjaar.',
+  'r5.s1':'Energiearmoede Heerlen (2024)','r5.s2':'Bewoners Heerlen-Noord · 14 districten',
+  'r5.s3':'Gem. energierekening energy-poor (2024)','r5.s4':'SPUK SiSa-deadline',
+  'r5.c1.title':'Energiearmoede per gemeente — Zuid-Limburg 2024',
+  'r5.c1.sub':'% huishoudens in energiearmoede · Nationaal gemiddelde: 6,1%',
+  'r5.c2.title':'Kernindicatoren over tijd — Pilotwijken 2025',
+  'r5.c2.sub':'Participatie, kostenbesparing en signaalprevalentie',
+  'r5.c3.title':'Participatie per focuswijk',
+  'r5.c3.sub':'% bereik van uitgenodigde huishoudens — jan t/m jun 2025',
+  'r5.leg1':'Participatie (%) — links','r5.leg2':'Kostenbesparing (%) — rechts','r5.leg3':'Signaalprevalentie (%) — rechts',
+  'req.rows':[
+    {name:'Energiebesparing',desc:'kWh / m³ gas / € / CO₂ vs referentiewaarde',policy:'SPUK, SiSa M01, BBV, dVi H02',status:'Actief',phase:'Outcome',t:'full'},
+    {name:'Participatie',desc:'Bereik, actieve gebruikers, conversieverloop, kansgelijkheid',policy:'SiSa M02, NPHLN, H05',status:'Actief',phase:'Output',t:'full'},
+    {name:'Energiearmoede',desc:'Onderverbruik detectie (gedragsmatig)',policy:'NPHLN, Overlegwet, M19',status:'Gedeeltelijk',phase:'Outcome',t:'part'},
+    {name:'Beleidsrapportage',desc:'SiSa / dVi export, verantwoording',policy:'SiSa, BBV, dVi, NPA',status:'Actief',phase:'Output',t:'full'},
+    {name:'Buurttrends',desc:'Wijkmonitoring, regionale vergelijking',policy:'NPHLN, Coalitieakkoord',status:'Groeiend',phase:'Impact',t:'grow'}
+  ],
+  'titles':{overview:'Dashboard Overzicht',r1:'R1 · Energiebesparing',r2:'R2 · Bereik & Participatie',r3:'R3 · Energiearmoede',r4:'R4 · Beleidsrapportage',r5:'R5 · Buurttrends'}
+},
+en:{
+  'sb.sub':'Municipality Heerlen · Heerlen-Noord','sb.sect.ov':'Overview','sb.sect.req':'Requirements',
+  'nav.dashboard':'Dashboard','nav.r1':'Energy Savings','nav.r2':'Reach & Participation',
+  'nav.r3':'Energy Poverty','nav.r4':'Policy Reporting','nav.r5':'Neighbourhood Trends',
+  'sb.footer':'Pilot phase · Jan–Jun 2025','tb.period':'Period','tb.corp':'Corporation','unit.hh':' hh.',
+  'ov.tag':'Energieverdienspel · Municipality Heerlen','ov.title':'Dashboard Overview',
+  'ov.sub':'Policy and impact monitoring for Municipality Heerlen and housing corporations. Pilot phase January–June 2025 in five focus neighbourhoods of Heerlen-Noord (56,000 residents across 14 districts; 13.4% energy poverty — highest in the Netherlands).',
+  'ov.k1.lbl':'Invited households','ov.k1.d':'Five focus neighbourhoods Heerlen-Noord',
+  'ov.k2.lbl':'Enrolled (EVS)','ov.k2.d':'20.2% reach of pilot group',
+  'ov.k3.lbl':'Energy cost reduction','ov.k3.d':'Above 5% success threshold',
+  'ov.k4.lbl':'Cost savings','ov.k4.d':'Gas + electricity · Jan–Jun 2025',
+  'ov.k5.lbl':'CO₂ avoided','ov.k5.d':'Electricity + gas combined',
+  'ov.k6.lbl':'Energy poverty signals','ov.k6.d':'4.5% of pilot group',
+  'ov.tbl.title':'Requirements status — Pilot phase 2025','ov.tbl.sub':'Progress per Must Have monitoring requirement',
+  'th.req':'Requirement','th.desc':'Description','th.policy':'Policy framework','th.status':'Status','th.phase':'Phase',
+  'r1.tag':'R1 · Outcome — SPUK / SiSa M01 / BBV / dVi H02','r1.title':'Energy Savings',
+  'r1.sub':'Measured reduction in electricity (kWh) and gas consumption (m³) against a weather-corrected baseline. Tariffs 2025: €0.28/kWh and €1.34/m³.',
+  'r1.k1.lbl':'Electricity savings','r1.k1.d':'Cumulative Jan–Jun 2025',
+  'r1.k2.lbl':'Gas savings','r1.k2.d':'Cumulative Jan–Jun 2025',
+  'r1.k3.lbl':'Total cost savings','r1.k3.d':'Gas €5,146 + electricity €13,244',
+  'r1.k4.lbl':'BBV effect ratio','r1.k4.d':'€1 programme cost → €2.80 savings',
+  'r1.c1.title':'Gas consumption: actual vs baseline — Jan to Jun 2025',
+  'r1.c1.sub':'m³ per month (average per participant) · Weather-corrected using degree-day method (KNMI)',
+  'r1.c2.title':'Monthly cost savings (€)','r1.c2.sub':'Gas + electricity combined · all participants',
+  'r1.c3.title':'CO₂ avoided per month (kg)','r1.c3.sub':'Gas: 1.89 kg/m³ · Electricity: 0.25 kg/kWh',
+  'leg.baseline':'Baseline (expected)','leg.actual.gas':'Actual gas (m³)','leg.actual.elec':'Actual electricity (kWh/10)',
+  'r1.method.hdr':'Measurement methodology','r1.method.body':'Baseline constructed using degree-day method (KNMI weather data, Heerlen station). Actual consumption via P4 smart meters (quarter-hourly electricity and gas readings). A control group will be set up in the next pilot phase. Tariffs 2025: €0.28/kWh · €1.34/m³.',
+  'r2.tag':'R2 · Output — SiSa M02 / NPHLN / Performance Agreements H05','r2.title':'Reach & Participation',
+  'r2.sub':'Enrolment, user activity and behavioural results in the EVS app. Target area: Heerlen-Noord (56,000 residents, 14 districts). Social housing target group: ~30,000 households.',
+  'r2.k1.lbl':'Reach (pilot areas)','r2.k1.d':'847 of 4,200 invited households',
+  'r2.k2.lbl':'Active last month','r2.k2.d':'72.3% retention after 6 months',
+  'r2.k3.lbl':'Actions completed','r2.k3.d':'Tips, challenges & rewards',
+  'r2.k4.lbl':'Vulnerable participation','r2.k4.d':'vs 52% non-vulnerable · participatiekloof',
+  'r2.c1.title':'Conversion funnel','r2.c1.sub':'From invitation to active retention',
+  'r2.c2.title':'Active households per month','r2.c2.sub':'Households with ≥1 session per week',
+  'r2.c3.title':'Participation by neighbourhood','r2.c3.sub':'% uptake of invited households',
+  'r2.c4.title':'Equity: vulnerable vs non-vulnerable','r2.c4.sub':'Participation by household type per neighbourhood (NPHLN)',
+  'r2.c5.title':'Retention cohort analysis','r2.c5.sub':'% active per month after onboarding — cohorts Jan to Apr 2025',
+  'cohort.hdr':['Cohort','Month 1','Month 2','Month 3','Month 4','Month 5','Month 6'],
+  'funnel.labels':['Invited','Registered','Active ≥1×/wk','Retained 6 mo'],
+  'r3.tag':'R3 · Outcome — NPHLN / Overlegwet / Early warning Wgs (M19)','r3.title':'Energy Poverty Detection',
+  'r3.sub':'Behavioural detection of under-consumption via P4 smart meters. Deviation from normative expected consumption based on dwelling type, occupancy and outdoor temperature.',
+  'r3.consent.bold':'Privacy protection active.',
+  'r3.consent.body':'Household-level data is only visible after explicit consent. Aggregations at neighbourhood and complex level are always available. Governance: EVS Privacy & Data Governance group.',
+  'r3.k1.lbl':'Flagged households','r3.k1.d':'Under-consumption ≥3 consecutive months',
+  'r3.k2.lbl':'Prevalence (pilot group)','r3.k2.d':'Heerlen-wide: 13.4% energy poverty',
+  'r3.k3.lbl':'Avg. under-consumption','r3.k3.d':'vs normative expected gas consumption',
+  'r3.k4.lbl':'Consent granted','r3.k4.d':'24 households pending',
+  'r3.c1.title':'Actual vs normative expected gas consumption','r3.c1.sub':'Average signal group (38 hh.) · m³ gas per month',
+  'r3.c2.title':'Under-consumption prevalence by neighbourhood','r3.c2.sub':'% households with persistent under-consumption signal',
+  'badge.signal':'SIGNAL','hm.low':'Low','hm.high':'High',
+  'r3.context.hdr':'National context — Energy poverty Netherlands 2024',
+  'r3.context.body':'119,000 Dutch households deliberately kept their heating off in 2024 (2019: 80,000). Among low incomes in homes with label E–G, under-consumption rose from 24% (2021) to 49% (2024). Heerlen has the highest energy poverty rate in South Limburg at 13.4% — more than twice the national average of 6.1%. Average energy bill for energy-poor households: €184/month (2024), up from €119 in 2023.',
+  'alerts':[
+    {title:'Cluster of 15 households — Vrieheide-De Stack',desc:'Gas consumption >45% below normative for ≥3 months. Complex with energy labels E–F. Possible under-heating; consent required.',btn:'Request consent',warn:false},
+    {title:'11 households — Schuttersweide (stacked flats)',desc:'Under-consumption pattern in apartment complex. Correlation with debt early-warning signal (Wgs M19).',btn:'Request consent',warn:false},
+    {title:'12 households — Other Heerlen-Noord',desc:'Low consumption without clear pattern. Possibly energy-efficient homes or long-term absence. Monitoring ongoing.',btn:'View details',warn:true}
+  ],
+  'r4.tag':'R4 · Output — SiSa / BBV / dVi / Performance Agreements','r4.title':'Policy Reporting',
+  'r4.sub':'Exportable KPI overviews in mandatory policy formats. SPUK accountability via SiSa by 31 December 2027.',
+  'r4.sisa.hdr':'SiSa indicators — Municipality Heerlen',
+  'r4.sisa.m01':'Measured electricity reduction vs weather-corrected baseline',
+  'r4.sisa.m01.ind':'SPUK Energy Poverty · Cumulative Jan–Jun 2025',
+  'r4.sisa.m02':'Households reached with energy behaviour intervention via EVS app',
+  'r4.sisa.m02.ind':'SPUK reach · Pilot phase 2025',
+  'r4.sisa.m03':'Households screened for behavioural energy poverty signal',
+  'r4.sisa.m03.ind':'Deadline: 31 December 2027',
+  'r4.dvi.hdr':'dVi indicators — Housing corporations',
+  'r4.dvi.h02':'Percentage reduction in energy costs vs baseline per participating household',
+  'r4.dvi.h02.ind':'Woonpunt · Weller · Vincio Wonen',
+  'r4.dvi.h04':'Reach: share of invited tenants who actively participated in the EVS pilot',
+  'r4.dvi.h04.ind':'National Performance Agreements · 2025',
+  'r4.dvi.h05':'Prevalence of behavioural energy poverty signal per housing complex portfolio',
+  'r4.dvi.h05.ind':'Heerlen Performance Agreements',
+  'r4.bbv.hdr':'BBV Savings ratio',
+  'r4.bbv.desc':'Per €1 EVS programme costs → €2.80 realised cost savings for participants',
+  'r4.bbv.ind':'BBV council accountability',
+  'r4.method.hdr':'SPUK accountability',
+  'r4.method.body':'Municipality Heerlen has earmarked €2,230,450 SPUK funds for Energy Poverty for focus neighbourhoods in Heerlen-Noord, plus €400,000 for households at 130–175% social minimum and €50,000 above 175%. Accountability via SiSa by 31 December 2027. EVS success threshold: ≥5% energy cost reduction per participating household.',
+  'exp.pdf':'PDF report','exp.xls':'Excel','exp.csv':'CSV','exp.xml':'SiSa XML',
+  'r5.tag':'R5 · Impact — NPHLN / Heerlen Coalition Agreement / Regional Performance Agreements','r5.title':'Neighbourhood Trends & Regional Context',
+  'r5.sub':'Indicator development at neighbourhood level and comparison within South Limburg. Year-on-year trend follows after the first full pilot year.',
+  'r5.s1':'Energy poverty Heerlen (2024)','r5.s2':'Residents Heerlen-Noord · 14 districts',
+  'r5.s3':'Avg. energy bill energy-poor (2024)','r5.s4':'SPUK SiSa deadline',
+  'r5.c1.title':'Energy poverty by municipality — South Limburg 2024',
+  'r5.c1.sub':'% of households in energy poverty · National average: 6.1%',
+  'r5.c2.title':'Key indicators over time — Pilot neighbourhoods 2025',
+  'r5.c2.sub':'Participation, cost savings and signal prevalence',
+  'r5.c3.title':'Participation by focus neighbourhood',
+  'r5.c3.sub':'% reach of invited households — Jan to Jun 2025',
+  'r5.leg1':'Participation (%) — left','r5.leg2':'Cost savings (%) — right','r5.leg3':'Signal prevalence (%) — right',
+  'req.rows':[
+    {name:'Energy Savings',desc:'kWh / m³ gas / € / CO₂ vs baseline',policy:'SPUK, SiSa M01, BBV, dVi H02',status:'Active',phase:'Outcome',t:'full'},
+    {name:'Participation',desc:'Reach, active users, funnel, equity',policy:'SiSa M02, NPHLN, H05',status:'Active',phase:'Output',t:'full'},
+    {name:'Energy Poverty',desc:'Under-consumption detection (behavioural)',policy:'NPHLN, Overlegwet, M19',status:'Partial',phase:'Outcome',t:'part'},
+    {name:'Policy Reporting',desc:'SiSa / dVi export, accountability',policy:'SiSa, BBV, dVi, NPA',status:'Active',phase:'Output',t:'full'},
+    {name:'Neighbourhood Trends',desc:'Neighbourhood monitoring, regional comparison',policy:'NPHLN, Coalition Agreement',status:'Growing',phase:'Impact',t:'grow'}
+  ],
+  'titles':{overview:'Dashboard Overview',r1:'R1 · Energy Savings',r2:'R2 · Reach & Participation',r3:'R3 · Energy Poverty',r4:'R4 · Policy Reporting',r5:'R5 · Neighbourhood Trends'}
+}
+};
+
+let lang='nl';
+function t(k){return T[lang][k]!==undefined?T[lang][k]:(T.nl[k]||k);}
+function setLang(l){
+  lang=l;
+  document.getElementById('html-root').lang=l;
+  document.getElementById('btn-nl').classList.toggle('active',l==='nl');
+  document.getElementById('btn-en').classList.toggle('active',l==='en');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const v=T[l][el.getAttribute('data-i18n')];if(v!==undefined&&typeof v==='string')el.textContent=v;});
+  const cur=document.querySelector('.nav-item.active');
+  if(cur)document.getElementById('tb-title').textContent=(t('titles')[cur.dataset.sec]||'');
+  buildReqTable();buildAlerts();buildFunnel();buildCohortHead();
+}
+
+const MNL=['Jan','Feb','Mrt','Apr','Mei','Jun'],MEN=['Jan','Feb','Mar','Apr','May','Jun'];
+const NBHDS=['Schuttersweide','Breitnerstr.','Ferd. Bolstr.','P. Breughelstr.','Vrieheide'];
+const D={
+  gasBase:[92,82,68,45,28,18],gasAct:[80,70,57,38,24,15],
+  elecBase:[310,295,280,260,240,225],elecAct:[285,268,254,238,218,206],
+  participation:[22,18,26,15,24],vulnerable:[16,12,19,10,17],nonVuln:[28,23,32,20,30],
+  poverty:[4.1,6.2,3.8,5.0,7.3],normGas:[92,82,68,45,28,18],sigGas:[54,48,40,26,16,11],
+  activeUsers:[312,398,487,541,582,612],
+  r5part:[12,14,16,18,19,20],r5sav:[3.8,4.2,5.1,5.8,6.0,6.1],r5pov:[4.8,4.7,4.6,4.5,4.5,4.5],
+  regionPov:{labels:['Heerlen','Vaals','Kerkrade','Brunssum','NL gem.'],vals:[13.4,12.3,10.0,9.2,6.1]}
+};
+D.costSav=D.gasBase.map((b,i)=>Math.round(((b-D.gasAct[i])*1.34+(D.elecBase[i]-D.elecAct[i])*0.28)*847/100)*100);
+D.co2Sav=D.gasBase.map((b,i)=>Math.round(((b-D.gasAct[i])*1.89+(D.elecBase[i]-D.elecAct[i])*0.25)*847/100)*100);
+
+Chart.defaults.color='#4A6E85';Chart.defaults.borderColor='rgba(168,200,224,.3)';
+Chart.defaults.font.family="'DM Sans',system-ui,sans-serif";Chart.defaults.font.size=11;
+const TT={backgroundColor:'#D1FAFF',borderColor:'rgba(168,200,224,.4)',borderWidth:1,titleColor:'#1D3348',bodyColor:'#57A773',padding:10,mode:'index',intersect:false};
+function mk(id,type,data,opts){const el=document.getElementById(id);if(!el)return;return new Chart(el,{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TT},...opts}});}
+
+function buildReqTable(){
+  const rows=t('req.rows'),tb=document.getElementById('req-tbody');tb.innerHTML='';
+  rows.forEach(r=>{const tr=document.createElement('tr');const pc=r.t==='full'?'pill-full':r.t==='part'?'pill-part':'pill-grow';const ic=r.t==='full'?'ti-check':r.t==='part'?'ti-clock':'ti-trending-up';tr.innerHTML=`<td style="font-weight:600;color:var(--text)">${r.name}</td><td style="color:var(--text2)">${r.desc}</td><td style="color:var(--text3);font-size:12px">${r.policy}</td><td><span class="pill ${pc}"><i class="ti ${ic}" style="font-size:10px"></i> ${r.status}</span></td>`;tb.appendChild(tr);});
+}
+// ── Geo filter ───────────────────────────────────────────
+const GEO_META={
+  all:{label:'Alle wijken',users:882,part:21.0,pov:5.3,sav:14.7,signals:38},
+  schuttersweide:{label:'Schuttersweide',users:185,part:22.0,pov:4.1,sav:13.4,signals:8},
+  breitnerstraat:{label:'Breitnerstraat',users:148,part:18.0,pov:6.2,sav:11.8,signals:9},
+  bolstraat:{label:'Ferd. Bolstraat',users:218,part:26.0,pov:3.8,sav:14.2,signals:8},
+  breughelstraat:{label:'P. Breughelstraat',users:129,part:15.0,pov:5.0,sav:10.5,signals:6},
+  vrieheide:{label:'Vrieheide',users:167,part:19.9,pov:7.3,sav:12.9,signals:7}
+};
+let activeGeo='all';
+function applyGeoFilter(val){
+  activeGeo=val;
+  const g=GEO_META[val]||GEO_META.all;
+  // Update overview status cards
+  const scSav=document.getElementById('sc-gm-sav');
+  const scReach=document.getElementById('sc-gm-reach');
+  const scPct=document.getElementById('sc-gm-pct');
+  if(scSav){
+    const reach=val==='all'?847:Math.round(g.users*0.682);
+    const savEur=val==='all'?14200:Math.round(reach*g.sav*2.2);
+    scSav.textContent='€'+savEur.toLocaleString('nl-NL');
+    scReach.innerHTML=reach+' <span>huish.</span>';
+    scPct.innerHTML=g.sav.toFixed(1)+' <span>%</span>';
+  }
+  // Show geo banner
+  let banner=document.getElementById('geo-banner');
+  if(val==='all'){if(banner)banner.remove();return;}
+  if(!banner){banner=document.createElement('div');banner.id='geo-banner';banner.style.cssText='position:fixed;bottom:18px;right:18px;background:var(--teal);color:#D1FAFF;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:700;z-index:200;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,.2)';document.body.appendChild(banner);}
+  banner.innerHTML=`<i class="ti ti-map-pin" style="font-size:14px"></i> Filter: ${g.label} &nbsp;·&nbsp; ${g.users} actief &nbsp;·&nbsp; ${g.pov}% armoede &nbsp;·&nbsp; ${g.signals} signalen <button onclick="document.getElementById('sel-geo').value='all';applyGeoFilter('all')" style="margin-left:8px;background:rgba(255,255,255,.2);border:none;color:#D1FAFF;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">✕ Wissen</button>`;
+}
+
+// ── Raw data download helpers ─────────────────────────────
+const DATASETS={
+  energy_per_wijk:{headers:['wijk','maand','gas_baseline_m3','gas_werkelijk_m3','elektr_baseline_kwh','elektr_werkelijk_kwh'],rows:[['Schuttersweide','2025-01',92,80,310,285],['Schuttersweide','2025-02',82,70,295,268],['Breitnerstraat','2025-01',92,81,308,284],['Breitnerstraat','2025-02',82,72,293,267],['Ferd. Bolstraat','2025-01',91,78,312,286],['Vrieheide','2025-01',93,82,309,283]]},
+  participatie:{headers:['wijk','maand','uitgenodigd','geregistreerd','actief','retentie_pct'],rows:[['Schuttersweide','2025-01',840,248,152,null],['Schuttersweide','2025-02',840,248,194,null],['Breitnerstraat','2025-01',820,242,148,null],['Breitnerstraat','2025-02',820,242,152,null]]},
+  armoede:{headers:['wijk','maand','pilotgroep','signalen','prevalentie_pct','toestemming_verleend'],rows:[['Schuttersweide','2025-06',185,8,4.1,3],['Breitnerstraat','2025-06',148,9,6.2,4],['Ferd. Bolstraat','2025-06',218,8,3.8,2],['P. Breughelstraat','2025-06',129,6,5.0,3],['Vrieheide','2025-06',167,7,7.3,2]]},
+  baseline:{headers:['wijk','maand','gas_baseline','gas_werkelijk','gas_besparing_pct','elektr_baseline','elektr_werkelijk','elektr_besparing_pct'],rows:[['Alle wijken','2025-01',92,80,13.0,310,285,8.1],['Alle wijken','2025-02',82,70,14.6,295,268,9.2],['Alle wijken','2025-03',68,57,16.2,280,254,9.3],['Alle wijken','2025-04',45,38,15.6,260,238,8.5],['Alle wijken','2025-05',28,24,14.3,240,218,9.2],['Alle wijken','2025-06',18,15,16.7,225,206,8.4]]},
+  geo:{headers:['wijk','lat','lng','participatie_pct','armoede_pct','besparing_pct','actieve_gebruikers','signaal_actief'],rows:[['Schuttersweide',50.9085,5.9750,22,4.1,13.4,185,false],['Breitnerstraat',50.9025,5.9680,18,6.2,11.8,148,true],['Ferd. Bolstraat',50.8980,5.9720,26,3.8,14.2,218,false],['P. Breughelstraat',50.9000,5.9810,15,5.0,10.5,129,true],['Vrieheide',50.9120,5.9850,24,7.3,12.9,167,true]]},
+  controlegroep:{headers:['maand','evs_gas_m3','ctrl_gas_m3','evs_elektr_kwh','ctrl_elektr_kwh','effect_gas_pct','n_evs','n_ctrl'],rows:[['2025-01',80,91,285,308,12.1,847,312],['2025-02',70,82,268,291,14.6,847,312],['2025-03',57,67,254,275,14.9,847,312],['2025-04',38,45,238,257,15.6,847,312],['2025-05',24,28,218,235,14.3,847,312],['2025-06',15,18,206,222,16.7,847,312]]}
+};
+const PRIVACY_MIN=10; // AVG: suppress rows with fewer than this many households
+// Columns that represent household/participant counts for privacy filtering
+const PRIVACY_COUNT_COLS=['pilotgroep','geregistreerd','actief','uitgenodigd','actieve_gebruikers'];
+function privacyFilter(ds){
+  const countIdx=ds.headers.findIndex(h=>PRIVACY_COUNT_COLS.includes(h));
+  if(countIdx<0)return ds.rows; // no count column → pass through
+  return ds.rows.filter(r=>r[countIdx]==null||Number(r[countIdx])>=PRIVACY_MIN);
+}
+function downloadCSV(key){
+  const ds=DATASETS[key];if(!ds)return;
+  const rows=privacyFilter(ds);
+  const suppressed=ds.rows.length-rows.length;
+  const note=suppressed>0?`# PRIVACY: ${suppressed} rij(en) onderdrukt (< ${PRIVACY_MIN} huishoudens per postcode-6 — AVG)\n`:'';
+  const lines=[note+ds.headers.join(','),...rows.map(r=>r.join(','))];
+  triggerDownload('evs_'+key+'_2025.csv','data:text/csv;charset=utf-8,'+encodeURIComponent(lines.join('\n')));
+}
+function downloadJSON(key){
+  const ds=DATASETS[key];if(!ds)return;
+  const rows=privacyFilter(ds);
+  const suppressed=ds.rows.length-rows.length;
+  const obj={dataset:key,generated:'2025-06',source:'EVS Monitor — Gemeente Heerlen',privacy_note:`Rijen met <${PRIVACY_MIN} huishoudens onderdrukt conform AVG`,suppressed_rows:suppressed,rows:rows.map(r=>{const o={};ds.headers.forEach((h,i)=>o[h]=r[i]);return o;})};
+  triggerDownload('evs_'+key+'_2025.json','data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(obj,null,2)));
+}
+function triggerDownload(filename,href){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
+
+// ── Drill-down toggle ─────────────────────────────────────
+function toggleDrill(id){
+  const el=document.getElementById(id);if(!el)return;
+  const open=el.classList.toggle('open');
+  const btn=el.previousElementSibling;
+  if(btn&&btn.classList.contains('sc-expand')){
+    const icon=btn.querySelector('i');
+    if(icon){icon.className=open?'ti ti-chevron-up':'ti ti-chevron-down';icon.style.fontSize='10px';}
+  }
+}
+
+// ── Editable KPI target ───────────────────────────────────
+function editTarget(id,prefix,_unused,badgeId){
+  const el=document.getElementById(id);if(!el)return;
+  const current=el.textContent.replace(prefix,'').replace('≥ ','').trim();
+  const input=document.createElement('input');
+  input.className='sc-target-input';input.value=current;input.type='text';
+  el.replaceWith(input);input.focus();input.select();
+  function save(){
+    const newVal=input.value.trim();
+    const strong=document.createElement('strong');strong.id=id;
+    strong.textContent=(prefix||'')+newVal;
+    input.replaceWith(strong);
+    if(badgeId){
+      const targetNum=parseFloat(newVal.replace(/[^0-9.,]/g,'').replace(',','.'));
+      if(!isNaN(targetNum)){
+        // read actual value live from the card's sc-val element
+        const card=strong.closest('.status-card');
+        const valEl=card?card.querySelector('.sc-val'):null;
+        const actualRaw=valEl?valEl.textContent.replace(/[^0-9.,]/g,'').replace(',','.').trim():'0';
+        const actual=parseFloat(actualRaw)||0;
+        updateBadge(badgeId,actual,targetNum,prefix);
+      }
+    }
+    if(id==='sc-t-sav') refreshSavChart();
+  }
+  input.addEventListener('blur',save);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape'){input.value=current;input.blur();}});
+}
+
+function refreshSavChart(){
+  const chart=window._ovLineChart;if(!chart)return;
+  const targetEl=document.getElementById('sc-t-sav');
+  const target=targetEl?parseInt(targetEl.textContent.replace(/[^0-9]/g,'')):15000;
+  const ds=chart.data.datasets;
+  const labelsExt=chart.data.labels;
+  ds[5].data=labelsExt.map(()=>target);
+  ds[5].label='Doel (€'+target.toLocaleString('nl-NL')+')';
+  chart.update();
+  updateBadge('badge-sav',14200,target,'€');
+}
+
+function updateBadge(badgeId,actual,target,prefix){
+  const badge=document.getElementById(badgeId);if(!badge)return;
+  const pct=actual/target;
+  const isEuro=(prefix==='€');
+  let cls,icon,label;
+  if(pct>=1){
+    cls='on-track';icon='ti-check';
+    label=isEuro?'Op koers':'Op koers';
+  } else if(pct>=0.85){
+    cls='warn-track';icon='ti-clock';
+    const p=Math.round(pct*1000)/10;
+    label=p+'% van doel';
+  } else {
+    cls='off-track';icon='ti-alert-triangle';
+    const p=Math.round(pct*1000)/10;
+    label=p+'% van doel';
+  }
+  badge.className='sc-badge '+cls;
+  badge.innerHTML=`<i class="ti ${icon}" style="font-size:11px"></i> ${label}`;
+}
+
+function buildAlerts(){
+  const list=document.getElementById('alert-list');list.innerHTML='';
+  t('alerts').forEach((a,i)=>{
+    const d=document.createElement('div');d.className='alert '+(a.warn?'warn':'crit');d.dataset.idx=i;
+    const isConsent=!a.warn;
+    const granted=consentGranted.has(i);
+    d.innerHTML=`<div class="alert-ico"><i class="ti ${granted?'ti-lock-open':a.warn?'ti-info-circle':'ti-alert-triangle'}"></i></div><div class="alert-body"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div>${granted?`<div class="consent-granted"><i class="ti ti-check"></i> ${lang==='en'?'Consent granted — household data now accessible':'Toestemming verleend — huishouddata nu toegankelijk'}</div>`:''}</div>${granted?`<span class="consent-tag"><i class="ti ti-shield-check"></i> ${lang==='en'?'Granted':'Verleend'}</span>`:`<button class="alert-btn${isConsent?' consent-btn':''}" onclick="handleConsentBtn(${i},this)">${a.btn}</button>`}`;
+    list.appendChild(d);
+  });
+}
+const consentGranted=new Set();
+function handleConsentBtn(idx,btn){
+  consentGranted.add(idx);
+  const alert=btn.closest('.alert');
+  alert.style.transition='opacity .3s';
+  alert.style.opacity='0.5';
+  setTimeout(()=>{
+    alert.style.opacity='1';
+    buildAlerts();
+    const kv=document.querySelector('.kpi[style*="--kpi-c:var(--text3)"] .kpi-val');
+    if(kv)kv.textContent=(14+consentGranted.size)+' / 38';
+  },300);
+}
+function buildFunnel(){
+  const labels=t('funnel.labels');
+  const items=[{v:4200,pct:'100%',w:100,bg:'#A8C8E0'},{v:1240,pct:'29.5%',w:29.5,bg:'#6A8EAE'},{v:847,pct:'20.2%',w:20.2,bg:'#57A773'},{v:612,pct:'14.6%',w:14.6,bg:'#1D3348'}];
+  const fr=document.getElementById('funnel-rows');fr.innerHTML='';
+  items.forEach((item,i)=>{const row=document.createElement('div');row.className='f-row';row.innerHTML=`<span class="f-lbl">${labels[i]}</span><div class="f-wrap"><div class="f-bar" style="width:${item.w}%;background:${item.bg}"><span class="f-bar-val">${item.v.toLocaleString('nl-NL')}</span></div></div><span class="f-pct">${item.pct}</span>`;fr.appendChild(row);});
+}
+function buildCohortHead(){document.getElementById('cohort-head').innerHTML=t('cohort.hdr').map((h,i)=>`<th${i>0?' style="text-align:center"':''}>${h}</th>`).join('');}
+
+const done={};
+function buildCharts(s){
+  const M=lang==='en'?MEN:MNL;
+  const yG={color:'rgba(168,200,224,.2)'},noX={display:false};
+  const isCorp=currentRole==='corp';
+  if(s==='overview'){
+    const realTotal=[3493,7157,10623,13295,15627,17589];
+    const labelsExt=[...M,'Jul','Aug'];
+    // Least-squares linear regression over all 6 data points
+    function linReg(vals){
+      const n=vals.length,xs=vals.map((_,i)=>i);
+      const sumX=xs.reduce((a,b)=>a+b,0),sumY=vals.reduce((a,b)=>a+b,0);
+      const sumXY=xs.reduce((s,x,i)=>s+x*vals[i],0),sumX2=xs.reduce((s,x)=>s+x*x,0);
+      const slope=(n*sumXY-sumX*sumY)/(n*sumX2-sumX*sumX);
+      const intercept=(sumY-slope*sumX)/n;
+      // residual std dev for confidence band
+      const residuals=vals.map((y,i)=>y-(intercept+slope*i));
+      const se=Math.sqrt(residuals.reduce((s,r)=>s+r*r,0)/(n-2));
+      return {slope,intercept,se};
+    }
+    const {slope,intercept,se}=linReg(realTotal);
+    const proj=labelsExt.map((_,i)=>i<5?null:Math.round(intercept+slope*i));
+    const projHigh=labelsExt.map((_,i)=>i<5?null:Math.round(intercept+slope*i+1.96*se));
+    const projLow=labelsExt.map((_,i)=>i<5?null:Math.round(intercept+slope*i-1.96*se));
+    const targetEl=document.getElementById('sc-t-sav');
+    const target=targetEl?parseInt(targetEl.textContent.replace(/[^0-9]/g,'')):15000;
+    window._ovLineData={realTotal,labelsExt,proj,projHigh,projLow,slope,intercept,se,M};
+    window._ovLineChart=mk('c-ov-line','line',{labels:labelsExt,datasets:[
+      {label:'Gasbesparing (€)',data:[1361,2722,3970,4764,5218,5558,null,null],borderColor:'#0F2233',backgroundColor:'rgba(15,34,51,.08)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#0F2233',tension:.4,fill:true},
+      {label:'Elektriciteitsbesparing (€)',data:[2132,4435,6653,8531,10409,12031,null,null],borderColor:'#3D6E8E',backgroundColor:'rgba(61,110,142,.08)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#3D6E8E',tension:.4,fill:true},
+      {label:'Prognose (regressie)',data:proj,borderColor:'#A86B10',backgroundColor:'transparent',borderWidth:2,borderDash:[6,4],pointRadius:[0,0,0,0,0,4,5,5],pointBackgroundColor:'#A86B10',tension:.3,fill:false},
+      {label:'95% BI boven',data:projHigh,borderColor:'rgba(168,107,16,.25)',backgroundColor:'rgba(168,107,16,.08)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:'+1',tension:.3},
+      {label:'95% BI onder',data:projLow,borderColor:'rgba(168,107,16,.25)',backgroundColor:'transparent',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false,tension:.3},
+      {label:'Doel (€'+target.toLocaleString('nl-NL')+')',data:labelsExt.map(()=>target),borderColor:'rgba(176,32,32,.6)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[2,4],pointRadius:0,fill:false}
+    ]},{scales:{y:{grid:yG,ticks:{callback:v=>'€'+v.toLocaleString('nl-NL'),color:'#4A6E85'}},x:{grid:noX,ticks:{color:'#4A6E85'}}},plugins:{legend:{labels:{filter:i=>!i.text.includes('BI'),color:'#4A6E85',font:{size:11}}},tooltip:{...TT,callbacks:{label:c=>c.dataset.label.includes('BI')?null:'  '+c.dataset.label+': €'+c.parsed.y.toLocaleString('nl-NL')}}}});
+    mk('c-ov-pie','doughnut',{labels:['Gasbesparing','Elektriciteitsbesparing'],datasets:[{data:[5558,12031],backgroundColor:['#1D3348','#A8C8E0'],borderColor:['#1D3348','#A8C8E0'],borderWidth:2,hoverOffset:8}]},{plugins:{legend:{position:'bottom',labels:{color:'#4A6E85',font:{size:11},padding:14}},tooltip:{...TT,callbacks:{label:c=>'  €'+c.parsed.toLocaleString('nl-NL')+' ('+Math.round(c.parsed/(5558+12031)*100)+'%)'}}}});
+    return;
+  }
+  if(s==='r1'&&isCorp){
+    mk('c-r1-gas-cp','line',{labels:M,datasets:[
+      {data:DC.gasBase,borderColor:'rgba(168,200,224,.5)',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.4,fill:false},
+      {data:DC.gasAct,borderColor:'#57A773',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#57A773',tension:.4,fill:{target:0,above:'rgba(87,167,115,.08)'}},
+      {data:DC.elecAct.map(v=>v/10),borderColor:'#6A8EAE',borderWidth:2,pointRadius:3,pointBackgroundColor:'#6A8EAE',tension:.4,fill:false,yAxisID:'y2'}
+    ]},{scales:{y:{grid:yG,ticks:{callback:v=>v+' m³',color:'#4A6E85'}},y2:{display:false},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    mk('c-r1-cost-cp','bar',{labels:M,datasets:[{data:DC.costSav,backgroundColor:'rgba(196,127,23,.65)',borderColor:'#C47F17',borderWidth:1,borderRadius:5}]},{scales:{y:{grid:yG,ticks:{callback:v=>'€'+(v/1000).toFixed(1)+'k',color:'#4A6E85'}},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    mk('c-r1-complex','bar',{labels:DC.complexNames,datasets:[{data:[1820,740,2140,1430,1100,1980],backgroundColor:DC.complexPart.map(v=>v>=22?'rgba(106,142,174,.8)':'rgba(196,127,23,.75)'),borderRadius:6}]},{scales:{y:{grid:yG,ticks:{callback:v=>'€'+v,color:'#4A6E85'}},x:{grid:noX,ticks:{maxRotation:30,font:{size:10},color:'#57A773'}}}});
+    return;
+  }
+  if(s==='r2'&&isCorp){
+    mk('c-r2-users-cp','line',{labels:M,datasets:[{data:DC.activeUsers,borderColor:'#1D3348',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#1D3348',tension:.4,fill:true,backgroundColor:'rgba(29,51,72,.08)'}]},{scales:{y:{grid:yG,suggestedMin:100,ticks:{color:'#4A6E85'}},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    mk('c-r2-complex','bar',{labels:DC.complexNames,datasets:[{data:DC.complexPart,backgroundColor:DC.complexPart.map(v=>v>=22?'rgba(106,142,174,.8)':'rgba(196,127,23,.75)'),borderRadius:6}]},{scales:{y:{grid:yG,max:40,ticks:{callback:v=>v+'%',color:'#4A6E85'}},x:{grid:noX,ticks:{maxRotation:30,font:{size:10},color:'#57A773'}}}});
+    return;
+  }
+  if(s==='r3'&&isCorp){
+    mk('c-r3-norm-cp','line',{labels:M,datasets:[
+      {data:DC.normGas,borderColor:'rgba(168,200,224,.5)',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.4,fill:false},
+      {data:DC.sigGas,borderColor:'#C0392B',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#C0392B',tension:.4,fill:{target:0,above:'rgba(192,57,43,.09)'}}
+    ]},{scales:{y:{grid:yG,ticks:{callback:v=>v+' m³',color:'#4A6E85'}},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    const hmCp=document.getElementById('heatmap-cp');if(hmCp){hmCp.innerHTML='';
+      const maxP=Math.max(...DC.complexPov);
+      DC.complexNames.forEach((n,i)=>{const p=DC.complexPov[i],ti=p/maxP;const bg=`rgba(192,57,43,${(0.08+ti*0.55).toFixed(2)})`;const cell=document.createElement('div');cell.className='hm-cell';cell.style.background=bg;cell.style.border='1px solid rgba(192,57,43,.2)';cell.innerHTML=`<span class="hm-name" style="color:#fff;font-size:10px">${n}</span><span class="hm-val" style="color:#fff">${p}%</span>`;hmCp.appendChild(cell);});}
+    return;
+  }
+  if(s==='r1'){
+    mk('c-r1-gas','line',{labels:M,datasets:[
+      {data:D.gasBase,borderColor:'rgba(168,200,224,.5)',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.4,fill:false},
+      {data:D.gasAct,borderColor:'#57A773',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#57A773',tension:.4,fill:{target:0,above:'rgba(87,167,115,.08)'}},
+      {data:D.elecAct.map(v=>v/10),borderColor:'#6A8EAE',borderWidth:2,pointRadius:3,pointBackgroundColor:'#6A8EAE',tension:.4,fill:false,yAxisID:'y2'}
+    ]},{scales:{y:{grid:yG,ticks:{callback:v=>v+' m³',color:'#4A6E85'}},y2:{display:false},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    mk('c-r1-cost','bar',{labels:M,datasets:[{data:D.costSav,backgroundColor:'rgba(196,127,23,.65)',borderColor:'#C47F17',borderWidth:1,borderRadius:5}]},{scales:{y:{grid:yG,ticks:{callback:v=>'€'+(v/1000).toFixed(1)+'k',color:'#4A6E85'}},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    mk('c-r1-co2','bar',{labels:M,datasets:[{data:D.co2Sav,backgroundColor:'rgba(106,142,174,.7)',borderColor:'#6A8EAE',borderWidth:1,borderRadius:5}]},{scales:{y:{grid:yG,ticks:{callback:v=>(v/1000).toFixed(1)+'t',color:'#4A6E85'}},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    // Control group A/B chart
+    const CT=DATASETS.controlegroep;
+    const ctGas=CT.rows.map(r=>r[1]);const ctCtrl=CT.rows.map(r=>r[2]);
+    const ctEffect=CT.rows.map((r,i)=>+(ctCtrl[i]-ctGas[i]).toFixed(1));
+    mk('c-r1-ctrl','line',{labels:M,datasets:[
+      {label:'EVS deelnemers (m³)',data:ctGas,borderColor:'#6A8EAE',backgroundColor:'rgba(106,142,174,.08)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#6A8EAE',tension:.4,fill:true},
+      {label:'Controlegroep (m³)',data:ctCtrl,borderColor:'rgba(168,200,224,.6)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'rgba(168,200,224,.6)',tension:.4,fill:false},
+      {label:'Gemeten effect (m³)',data:ctEffect,borderColor:'#C47F17',backgroundColor:'rgba(196,127,23,.08)',borderWidth:1.5,borderDash:[2,3],pointRadius:0,tension:.4,fill:true,yAxisID:'y2'}
+    ]},{scales:{y:{grid:yG,ticks:{callback:v=>v+' m³',color:'#4A6E85'}},y2:{position:'right',grid:{display:false},ticks:{callback:v=>'+'+v+' m³',color:'#C47F17'},title:{display:true,text:'Effect',color:'#C47F17',font:{size:10}}},x:{grid:noX,ticks:{color:'#4A6E85'}}},plugins:{legend:{display:true,position:'top',labels:{color:'#57A773',boxWidth:10,boxHeight:10,padding:12}},tooltip:{...TT,callbacks:{label:c=>'  '+c.dataset.label+': '+c.parsed.y+' m³'}}}});
+  }
+  if(s==='r2'){
+    mk('c-r2-users','line',{labels:M,datasets:[{data:D.activeUsers,borderColor:'#1D3348',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#1D3348',tension:.4,fill:true,backgroundColor:'rgba(29,51,72,.08)'}]},{scales:{y:{grid:yG,suggestedMin:250,ticks:{color:'#4A6E85'}},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    mk('c-r2-nbhd','bar',{labels:NBHDS,datasets:[{data:D.participation,backgroundColor:D.participation.map(v=>v>=22?'rgba(106,142,174,.8)':'rgba(168,200,224,.6)'),borderRadius:6}]},{scales:{y:{grid:yG,max:35,ticks:{callback:v=>v+'%',color:'#4A6E85'}},x:{grid:noX,ticks:{maxRotation:25,font:{size:10},color:'#57A773'}}}});
+    mk('c-r2-equity','bar',{labels:NBHDS,datasets:[
+      {label:lang==='en'?'Vulnerable':'Kwetsbaar',data:D.vulnerable,backgroundColor:'rgba(192,57,43,.65)',borderRadius:4},
+      {label:lang==='en'?'Non-vulnerable':'Niet-kwetsbaar',data:D.nonVuln,backgroundColor:'rgba(87,167,115,.7)',borderRadius:4}
+    ]},{scales:{y:{grid:yG,max:35,ticks:{callback:v=>v+'%',color:'#4A6E85'}},x:{grid:noX,ticks:{maxRotation:25,font:{size:10},color:'#57A773'}}},plugins:{legend:{display:true,position:'top',labels:{color:'#57A773',boxWidth:10,boxHeight:10,padding:12}},tooltip:TT}});
+    const cohorts=[{name:'Jan 2025',data:[100,84,77,71,68,66]},{name:'Feb 2025',data:[100,82,74,68,64,null]},{name:'Mrt 2025',data:[100,86,78,72,null,null]},{name:'Apr 2025',data:[100,80,73,null,null,null]}];
+    document.getElementById('cohort-body').innerHTML='';
+    cohorts.forEach(c=>{const tr=document.createElement('tr');tr.innerHTML='<td>'+c.name+'</td>'+c.data.map(v=>v===null?'<td style="color:var(--text3)">—</td>':`<td><span class="c-cell" style="background:rgba(106,142,174,${(v/100*.55).toFixed(2)});color:${v>=75?'#1D3348':v>=60?'#57A773':'#6A8EAE'}">${v}%</span></td>`).join('');document.getElementById('cohort-body').appendChild(tr);});
+  }
+  if(s==='r3'){
+    mk('c-r3-norm','line',{labels:M,datasets:[
+      {data:D.normGas,borderColor:'rgba(168,200,224,.5)',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.4,fill:false},
+      {data:D.sigGas,borderColor:'#C0392B',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#C0392B',tension:.4,fill:{target:0,above:'rgba(192,57,43,.09)'}}
+    ]},{scales:{y:{grid:yG,ticks:{callback:v=>v+' m³',color:'#4A6E85'}},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    const hm=document.getElementById('heatmap');hm.innerHTML='';
+    const maxP=Math.max(...D.poverty);
+    NBHDS.forEach((n,i)=>{const p=D.poverty[i],ti=p/maxP;const bg=`rgba(192,57,43,${(0.08+ti*0.55).toFixed(2)})`;const cell=document.createElement('div');cell.className='hm-cell';cell.style.background=bg;cell.style.border='1px solid rgba(192,57,43,.2)';cell.innerHTML=`<span class="hm-name" style="color:#fff">${n}</span><span class="hm-val" style="color:#fff">${p}%</span>`;hm.appendChild(cell);});
+  }
+  if(s==='r5'){
+    const rp=D.regionPov;
+    mk('c-r5-region','bar',{labels:rp.labels,datasets:[
+      {data:rp.vals,backgroundColor:rp.vals.map((v,i)=>i===0?'rgba(192,57,43,.75)':i===4?'rgba(106,142,174,.8)':'rgba(87,167,115,.65)'),borderRadius:6},
+      {data:Array(rp.vals.length).fill(6.1),type:'line',borderColor:'#6A8EAE',borderWidth:2,borderDash:[5,3],pointRadius:0,fill:false}
+    ]},{scales:{y:{grid:yG,max:16,ticks:{callback:v=>v+'%',color:'#4A6E85'}},x:{grid:noX,ticks:{color:'#57A773'}}},plugins:{tooltip:TT,legend:{display:false}}});
+    mk('c-r5-trends','line',{labels:M,datasets:[
+      {data:D.r5part,borderColor:'#A8C8E0',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#A8C8E0',tension:.4,yAxisID:'y'},
+      {data:D.r5sav,borderColor:'#6A8EAE',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#6A8EAE',tension:.4,yAxisID:'y2'},
+      {data:D.r5pov,borderColor:'#C0392B',borderWidth:2,borderDash:[4,2],pointRadius:3,pointBackgroundColor:'#C0392B',tension:.4,yAxisID:'y2'}
+    ]},{scales:{y:{grid:yG,position:'left',ticks:{callback:v=>v+'%',color:'#4A6E85'}},y2:{grid:{display:false},position:'right',ticks:{callback:v=>v+'%',color:'#6A8EAE'}},x:{grid:noX,ticks:{color:'#4A6E85'}}}});
+    mk('c-r5-nbhd','bar',{labels:NBHDS,datasets:[{data:D.participation,backgroundColor:['rgba(29,51,72,.8)','rgba(106,142,174,.8)','rgba(87,167,115,.8)','rgba(168,200,224,.75)','rgba(196,127,23,.75)'],borderRadius:6}]},{scales:{y:{grid:yG,max:35,ticks:{callback:v=>v+'%',color:'#4A6E85'}},x:{grid:noX,ticks:{maxRotation:25,font:{size:10},color:'#57A773'}}}});
+  }
+}
+
+// ── House-level map data ───────────────────────────────────
+const WIJK_DEFS=[
+  {id:'schuttersweide', name:'Schuttersweide',   lat:50.9090,lng:5.9750,dlat:.0028,dlng:.0038,active:185,part:22.0,pov:4.1,sav:13.4,
+   streets:['Schuttersweg','Schuttersweide','Slotenmaker','Zilversmid','Doornroospad']},
+  {id:'breitnerstraat', name:'Breitnerstraat',    lat:50.9025,lng:5.9675,dlat:.0018,dlng:.0028,active:148,part:18.0,pov:6.2,sav:11.8,
+   streets:['Breitnerstraat','Mesdagstraat','Bilderdijkstraat','Weissenbruchstraat']},
+  {id:'bolstraat',      name:'Ferd. Bolstraat',   lat:50.8982,lng:5.9722,dlat:.0026,dlng:.0038,active:218,part:26.0,pov:3.8,sav:14.2,
+   streets:['Ferdinand Bolstraat','Jan Luykenstraat','Atelierstraat','Molenweide']},
+  {id:'breughelstraat', name:'P. Breughelstraat', lat:50.9002,lng:5.9818,dlat:.0018,dlng:.0028,active:129,part:15.0,pov:5.0,sav:10.5,
+   streets:['P. Breughelstraat','Terborchstraat','Rembrandtstraat','Hogerbeets']},
+  {id:'vrieheide',      name:'Vrieheide',         lat:50.9118,lng:5.9848,dlat:.0028,dlng:.0028,active:167,part:24.0,pov:7.3,sav:12.9,
+   streets:['Vrieheidestraat','Kerkberg','Deken Tijssenstraat','Nieuwenhagerheide']},
+];
+
+function mkRand(seed){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967295;};}
+
+function generateHousePoints(){
+  const rand=mkRand(2025);
+  const pts=[];
+  WIJK_DEFS.forEach(w=>{
+    for(let i=0;i<65;i++){
+      const isActive=rand()<(w.part/100);
+      const isInvited=!isActive&&rand()<.28;
+      const isPoverty=rand()<(w.pov/100*3.5);
+      const savOffset=(rand()-.5)*7;
+      const sav=isActive?+(w.sav+savOffset).toFixed(1):0;
+      const savEur=isActive?Math.round((sav/100)*88):0;
+      const street=w.streets[Math.floor(rand()*w.streets.length)];
+      const num=2*Math.floor(rand()*65)+1;
+      // Scatter in a realistic grid-like pattern
+      const gi=i%8, gj=Math.floor(i/8);
+      const jitter=(rand()-.5)*.4;
+      pts.push({
+        lat:w.lat+(gi/7-.5)*2*w.dlat+(rand()-.5)*.0005,
+        lng:w.lng+(gj/8-.5)*2*w.dlng+(rand()-.5)*.0005,
+        wijk:w.id, wijkName:w.name,
+        addr:`${street} ${num}`,
+        status:isActive?'active':isInvited?'invited':'none',
+        sav, savEur, poverty:isPoverty,
+        type:rand()<.83?'Sociale huur':'Particulier',
+      });
+    }
+  });
+  return pts;
+}
+
+const HOUSE_PTS=generateHousePoints();
+
+const MAP_LAYERS={
+  participation:{
+    label:'Participatie',
+    color:pt=>pt.status==='active'?'#57A773':pt.status==='invited'?'#6A8EAE':'rgba(168,200,224,.5)',
+    fill:pt=>pt.status==='active'?'rgba(87,167,115,.85)':pt.status==='invited'?'rgba(106,142,174,.7)':'rgba(168,200,224,.2)',
+    highlight:pt=>pt.status==='active',
+    legend:[
+      {col:'#57A773',label:'Actief deelnemend'},
+      {col:'#6A8EAE',label:'Uitgenodigd · niet actief'},
+      {col:'rgba(168,200,224,.5)',label:'Niet uitgenodigd'},
+    ]
+  },
+  savings:{
+    label:'Besparing',
+    color:pt=>{
+      if(!pt.sav||pt.sav<=0)return 'rgba(168,200,224,.4)';
+      const t=Math.min(pt.sav/20,1);
+      return `rgb(${Math.round(192-t*105)},${Math.round(57+t*110)},${Math.round(43+t*72)})`;
+    },
+    fill:pt=>{
+      if(!pt.sav||pt.sav<=0)return 'rgba(168,200,224,.2)';
+      const t=Math.min(pt.sav/20,1);
+      return `rgba(${Math.round(192-t*105)},${Math.round(57+t*110)},${Math.round(43+t*72)},.75)`;
+    },
+    highlight:pt=>pt.sav>12,
+    legend:[
+      {col:'rgb(87,167,115)',label:'Hoge besparing > 14%'},
+      {col:'rgb(150,115,80)',label:'Gemiddeld 8–14%'},
+      {col:'rgba(168,200,224,.4)',label:'Niet deelnemend'},
+    ]
+  },
+  poverty:{
+    label:'Energiearmoede',
+    color:pt=>pt.poverty?'#C0392B':'rgba(168,200,224,.4)',
+    fill:pt=>pt.poverty?'rgba(192,57,43,.85)':'rgba(168,200,224,.2)',
+    highlight:pt=>pt.poverty,
+    legend:[
+      {col:'#C0392B',label:'Energiearmoede signaal'},
+      {col:'rgba(168,200,224,.4)',label:'Geen signaal'},
+    ]
+  }
+};
+
+let leafletMap=null,activeMapLayer='participation',houseLayerGroup=null,selectedWijk=null,wijkPolygons={};
+
+function buildMap(){
+  if(leafletMap){leafletMap.invalidateSize();return;}
+  leafletMap=L.map('leaflet-map',{zoomControl:true,scrollWheelZoom:true}).setView([50.905,5.977],16);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap © CartoDB',maxZoom:20
+  }).addTo(leafletMap);
+  renderHouseLayer();
+  buildMapSidebar();
+  setTimeout(()=>leafletMap.invalidateSize(),120);
+}
+
+function renderHouseLayer(){
+  if(houseLayerGroup)leafletMap.removeLayer(houseLayerGroup);
+  houseLayerGroup=L.layerGroup();
+  const layer=MAP_LAYERS[activeMapLayer];
+
+  const sorted=[...HOUSE_PTS].sort((a,b)=>layer.highlight(a)?1:layer.highlight(b)?-1:0);
+
+  sorted.forEach(pt=>{
+    const inSel=!selectedWijk||pt.wijk===selectedWijk;
+    const hi=inSel&&layer.highlight(pt);
+    const m=L.circleMarker([pt.lat,pt.lng],{
+      radius:hi?7:inSel?4:3,
+      color:inSel?layer.color(pt):'rgba(168,200,224,.25)',
+      fillColor:inSel?layer.fill(pt):'rgba(168,200,224,.08)',
+      fillOpacity:inSel?(hi?.92:.65):.25,
+      weight:hi?1.5:.5,
+    });
+
+    const statusHtml=pt.status==='active'?`<span style="color:#57A773;font-weight:700">✓ Actief deelnemend</span>`:
+                     pt.status==='invited'?`<span style="color:#6A8EAE">◎ Uitgenodigd</span>`:
+                     `<span style="color:#A8C8E0">— Niet uitgenodigd</span>`;
+    const povHtml=pt.poverty?`<div style="margin-top:7px;padding:4px 8px;background:rgba(192,57,43,.1);border-radius:4px;font-size:11px;color:#C0392B;font-weight:600">⚠ Energiearmoede signaal</div>`:'';
+
+    m.bindPopup(`
+      <div class="popup-name">${pt.addr}</div>
+      <div style="font-size:11px;color:#6A8EAE;margin-bottom:8px">${pt.wijkName} · ${pt.type}</div>
+      <div class="popup-grid">
+        <div class="popup-stat">${statusHtml}<br><span style="font-size:10px;color:#A8C8E0">Status</span></div>
+        <div class="popup-stat"><strong>${pt.savEur>0?'€'+pt.savEur+'/mnd':'—'}</strong><br><span style="font-size:10px;color:#A8C8E0">Kostenbesparing</span></div>
+        <div class="popup-stat"><strong>${pt.sav>0?pt.sav+'%':'—'}</strong><br><span style="font-size:10px;color:#A8C8E0">Energiereductie</span></div>
+        <div class="popup-stat"><strong>${pt.type}</strong><br><span style="font-size:10px;color:#A8C8E0">Woningtype</span></div>
+      </div>${povHtml}
+    `,{maxWidth:250});
+
+    houseLayerGroup.addLayer(m);
+  });
+
+  houseLayerGroup.addTo(leafletMap);
+  updateMapLegend();
+}
+
+function updateMapLegend(){
+  const el=document.getElementById('map-legend-items');
+  if(!el)return;
+  el.innerHTML=MAP_LAYERS[activeMapLayer].legend.map(l=>
+    `<div class="legend-row"><span class="legend-dot" style="background:${l.col}"></span>${l.label}</div>`
+  ).join('');
+}
+
+function setMapLayer(type){
+  activeMapLayer=type;
+  document.querySelectorAll('.map-layer-btn').forEach(b=>b.classList.toggle('active',b.dataset.layer===type));
+  renderHouseLayer();
+}
+
+function buildMapSidebar(){
+  const cards=document.getElementById('nbhd-cards');
+  if(!cards)return;
+  cards.innerHTML='';
+
+  // Pre-draw polygon boundaries for each wijk (hidden until selected)
+  Object.values(wijkPolygons).forEach(p=>leafletMap.removeLayer(p));
+  wijkPolygons={};
+  WIJK_DEFS.forEach(w=>{
+    const col=w.pov>6?'#C0392B':w.part>=22?'#57A773':'#C47F17';
+    // Build a soft rounded rectangle as 8-point polygon
+    const la=w.dlat*.95,ln=w.dlng*.95,c=.3;
+    const poly=L.polygon([
+      [w.lat+la,     w.lng-ln+ln*c],[w.lat+la,     w.lng+ln-ln*c],
+      [w.lat+la-la*c,w.lng+ln      ],[w.lat-la+la*c,w.lng+ln      ],
+      [w.lat-la,     w.lng+ln-ln*c],[w.lat-la,     w.lng-ln+ln*c],
+      [w.lat-la+la*c,w.lng-ln      ],[w.lat+la-la*c,w.lng-ln      ],
+    ],{color:col,fillColor:col,fillOpacity:.06,weight:2,dashArray:'6 4',opacity:0});
+    poly.addTo(leafletMap);
+    wijkPolygons[w.id]=poly;
+
+    const card=document.createElement('div');
+    card.className='nbhd-card';
+    card.dataset.wijk=w.id;
+    card.innerHTML=`<div class="nbhd-card-name"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px;vertical-align:middle"></span>${w.name}</div>
+      <div class="nbhd-stats">
+        <div class="nbhd-stat"><strong style="color:${col}">${w.part}%</strong>Participatie</div>
+        <div class="nbhd-stat"><strong>${w.active}</strong>Actief</div>
+        <div class="nbhd-stat"><strong>${w.sav}%</strong>Besparing</div>
+        <div class="nbhd-stat"><strong style="color:${w.pov>5?'#C0392B':'inherit'}">${w.pov}%</strong>Armoede</div>
+      </div>`;
+    card.addEventListener('click',()=>{
+      const isAlreadySel=selectedWijk===w.id;
+      selectWijk(isAlreadySel?null:w.id);
+    });
+    cards.appendChild(card);
+  });
+}
+
+function selectWijk(id){
+  selectedWijk=id;
+  // Update card styles
+  document.querySelectorAll('.nbhd-card').forEach(c=>{
+    const active=!id||c.dataset.wijk===id;
+    c.classList.toggle('sel',c.dataset.wijk===id);
+    c.style.opacity=active?'1':'.45';
+  });
+  // Show/hide polygons
+  WIJK_DEFS.forEach(w=>{
+    const p=wijkPolygons[w.id];
+    if(!p)return;
+    const col=w.pov>6?'#C0392B':w.part>=22?'#57A773':'#C47F17';
+    if(id===w.id){
+      p.setStyle({opacity:1,fillOpacity:.08,weight:2.5});
+      leafletMap.setView([w.lat,w.lng],17,{animate:true});
+    } else {
+      p.setStyle({opacity:0,fillOpacity:0});
+    }
+  });
+  renderHouseLayer();
+}
+
+// ── Corp-specific data ────────────────────────────────────
+const DC={
+  gasBase:[88,78,65,43,27,17],gasAct:[76,67,54,36,23,14],
+  elecBase:[290,275,265,245,230,215],elecAct:[267,250,239,223,209,197],
+  activeUsers:[152,194,237,263,283,298],
+  normGas:[88,78,65,43,27,17],sigGas:[52,46,39,25,15,11],
+  complexNames:['De Wingerd','Breughelflat','Atelierwoningen','Vrieheideblok A','Breitnercomplex','Lindenhof'],
+  complexPart:[28,14,31,22,17,25],
+  complexPov:[3.2,9.1,2.8,7.4,8.2,4.1]
+};
+DC.costSav=DC.gasBase.map((b,i)=>Math.round(((b-DC.gasAct[i])*1.34+(DC.elecBase[i]-DC.elecAct[i])*0.28)*412/100)*100);
+DC.co2Sav=DC.gasBase.map((b,i)=>Math.round(((b-DC.gasAct[i])*1.89+(DC.elecBase[i]-DC.elecAct[i])*0.25)*412/100)*100);
+
+const CORP_ALERTS=[
+  {title:'Vrieheideblok A — 8 huurders',desc:'Gasverbruik >43% onder normatief voor ≥3 maanden. Energielabel E–F. Mogelijke onderstoking; toestemming vereist voor huishoudniveau.',btn:'Toestemming aanvragen',warn:false},
+  {title:'Breitnercomplex — 9 huurders',desc:'Onderverbruikspatroon in uw complex. Correlatie met vroegsignalering schulden (Wgs M19). Wgs-koppeling actief.',btn:'Toestemming aanvragen',warn:false},
+  {title:'Breughelflat — 6 huurders',desc:'Laag verbruik zonder eenduidig patroon. Mogelijke efficiënte woningen of langdurige afwezigheid. Monitoring loopt.',btn:'Details bekijken',warn:true}
+];
+const corpConsentGranted=new Set();
+function buildCorpAlerts(){
+  const list=document.getElementById('alert-list-cp');if(!list)return;list.innerHTML='';
+  CORP_ALERTS.forEach((a,i)=>{
+    const d=document.createElement('div');d.className='alert '+(a.warn?'warn':'crit');
+    const granted=corpConsentGranted.has(i);const isConsent=!a.warn;
+    d.innerHTML=`<div class="alert-ico"><i class="ti ${granted?'ti-lock-open':a.warn?'ti-info-circle':'ti-alert-triangle'}"></i></div><div class="alert-body"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div>${granted?'<div class="consent-granted"><i class="ti ti-check"></i> Toestemming verleend — huurderdata toegankelijk</div>':''}</div>${granted?'<span class="consent-tag"><i class="ti ti-shield-check"></i> Verleend</span>':`<button class="alert-btn${isConsent?' consent-btn':''}" onclick="handleCorpConsent(${i},this)">${a.btn}</button>`}`;
+    list.appendChild(d);
+  });
+}
+function handleCorpConsent(idx,btn){
+  corpConsentGranted.add(idx);
+  const al=btn.closest('.alert');al.style.transition='opacity .3s';al.style.opacity='0.5';
+  setTimeout(()=>{al.style.opacity='1';buildCorpAlerts();},300);
+}
+function buildCorpFunnel(){
+  const fr=document.getElementById('funnel-rows-cp');if(!fr)return;fr.innerHTML='';
+  [{v:1820,pct:'100%',w:100,bg:'#A8C8E0',lbl:'Uitgenodigd'},{v:540,pct:'29.7%',w:29.7,bg:'#6A8EAE',lbl:'Geregistreerd'},{v:412,pct:'22.6%',w:22.6,bg:'#57A773',lbl:'Actief ≥1×/wk'},{v:298,pct:'16.4%',w:16.4,bg:'#1D3348',lbl:'Retentie 6 mnd'}].forEach(item=>{
+    const row=document.createElement('div');row.className='f-row';
+    row.innerHTML=`<span class="f-lbl">${item.lbl}</span><div class="f-wrap"><div class="f-bar" style="width:${item.w}%;background:${item.bg}"><span class="f-bar-val">${item.v.toLocaleString('nl-NL')}</span></div></div><span class="f-pct">${item.pct}</span>`;
+    fr.appendChild(row);
+  });
+}
+
+// ── Role picker ──────────────────────────────────────────
+let currentRole=null;
+
+function showRolePicker(){
+  const rp=document.getElementById('role-picker');
+  rp.style.display='flex';rp.style.opacity='0';rp.style.transition='opacity .25s';
+  setTimeout(()=>rp.style.opacity='1',10);
+}
+
+function selectRole(r){
+  currentRole=r;
+  const rp=document.getElementById('role-picker');
+  rp.style.transition='opacity .3s';rp.style.opacity='0';
+  setTimeout(()=>{rp.style.display='none';configureDashboard(r);},300);
+}
+
+function configureDashboard(r){
+  // Body class drives gm-view / cp-view CSS visibility
+  document.body.className='role-'+r;
+
+  // Role badge in topbar
+  const badge=document.getElementById('role-badge');
+  const badgeLabel=document.getElementById('role-badge-label');
+  badge.style.display='flex';
+  if(r==='gemeente'){
+    badge.className='role-badge gemeente';
+    badge.querySelector('i').className='ti ti-building-community';
+    badgeLabel.textContent='Gemeente Heerlen';
+  } else {
+    badge.className='role-badge corp';
+    badge.querySelector('i').className='ti ti-home-2';
+    badgeLabel.textContent='Woningcorporatie';
+  }
+
+  // Overview KPI grids
+  document.getElementById('kpi-gemeente').style.display=r==='gemeente'?'':'none';
+  document.getElementById('kpi-corp').style.display=r==='corp'?'':'none';
+
+  // Sidebar section heading
+  document.getElementById('sb-sect-req').textContent=r==='gemeente'?'Vereisten':'Mijn Portfolio';
+
+  // Show/hide role-only nav items
+  document.querySelectorAll('[data-role-only]').forEach(el=>{
+    el.style.display=el.dataset.roleOnly===r?'':'none';
+  });
+
+  // Rename shared nav items
+  document.querySelectorAll('[data-label-gemeente]').forEach(el=>{
+    el.querySelector('.nav-label').textContent=r==='gemeente'
+      ?el.dataset.labelGemeente:el.dataset.labelCorp;
+  });
+
+  // Build corp-specific dynamic content
+  if(r==='corp'){buildCorpAlerts();buildCorpFunnel();}
+  else{buildAlerts();buildFunnel();}
+
+  // Reset chart cache so corp canvases get built fresh on section visit
+  Object.keys(done).forEach(k=>delete done[k]);
+
+  // Titles for dVi section
+  T.nl.titles.dvi='dVi Rapportage';
+  T.en.titles.dvi='dVi Report';
+  T.nl.titles.map='Wijkkaart';T.en.titles.map='Neighbourhood Map';
+  T.nl.titles.methodo='Methodologie & Data';T.en.titles.methodo='Methodology & Data';
+
+  // Swap geo filter options per role
+  const geo=document.getElementById('sel-geo');
+  if(geo){
+    geo.innerHTML=r==='gemeente'
+      ?`<option value="all">Alle wijken</option><option value="schuttersweide">Schuttersweide</option><option value="breitnerstraat">Breitnerstraat</option><option value="bolstraat">Ferd. Bolstraat</option><option value="breughelstraat">P. Breughelstraat</option><option value="vrieheide">Vrieheide</option>`
+      :`<option value="all">Alle complexen</option><option value="wingerd">De Wingerd</option><option value="breughelflat">Breughelflat</option><option value="atelier">Atelierwoningen</option><option value="vrieheide_a">Vrieheideblok A</option><option value="breitner">Breitnercomplex</option><option value="lindenhof">Lindenhof</option>`;
+    document.querySelector('#geo-filter-group .filter-label').textContent=r==='gemeente'?'Locatie':'Complex';
+    applyGeoFilter('all');
+  }
+}
+
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.addEventListener('click',()=>{
+    const s=el.dataset.sec;
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.sec').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('sec-'+s).classList.add('active');
+    document.getElementById('tb-title').textContent=(t('titles')[s]||s==='map'?'Wijkkaart':'');
+    if(s==='map'){buildMap();}
+    else if(!done[s]){buildCharts(s);done[s]=true;}
+  });
+});
+
+buildReqTable();buildAlerts();buildFunnel();buildCohortHead();
+done['overview']=true; buildCharts('overview');
+
+// ── Widget customisation ──────────────────────────────────
+const WIDGET_DEFS=[
+  {id:'ov-kpis',    label:'KPI-statuskaarten',         icon:'ti-gauge',       desc:'Kostenbesparing, bereik en reductie met doelen',     def:true},
+  {id:'ov-charts',  label:'Besparingsgrafieken',        icon:'ti-chart-line',  desc:'Lijndiagram + taartdiagram energiebesparing',        def:true},
+  {id:'ov-table',   label:'Vereistenstatus tabel',      icon:'ti-table',       desc:'Must Have monitoringsvereisten pilotfase 2025',       def:true},
+  {id:'ov-funnel',  label:'Participatie samenvatting',  icon:'ti-users',       desc:'Bereik, conversie en retentie op overzichtspagina',  def:false},
+  {id:'ov-ab',      label:'A/B controlegroep',          icon:'ti-test-pipe',   desc:'Gemeten effect EVS vs. niet-deelnemers',             def:false},
+  {id:'ov-poverty', label:'Energiearmoede regio',       icon:'ti-alert-triangle', desc:'CBS-armoedecijfers per gemeente op overzicht',    def:false},
+];
+let wState={};
+function loadWidgets(){
+  try{wState=JSON.parse(localStorage.getItem('evs_widgets')||'{}');}catch(e){wState={};}
+  WIDGET_DEFS.forEach(w=>{if(!(w.id in wState))wState[w.id]=w.def;});
+  applyWidgets();
+}
+function applyWidgets(){
+  WIDGET_DEFS.forEach(w=>{
+    const el=document.querySelector('[data-widget-id="'+w.id+'"]');
+    if(el)el.style.display=wState[w.id]?'':'none';
+  });
+}
+function saveWidgets(){localStorage.setItem('evs_widgets',JSON.stringify(wState));}
+function openWidgetPanel(){
+  renderWidgetPanel();
+  document.getElementById('widget-panel').classList.add('open');
+  document.getElementById('widget-overlay').classList.add('open');
+}
+function closeWidgetPanel(){
+  document.getElementById('widget-panel').classList.remove('open');
+  document.getElementById('widget-overlay').classList.remove('open');
+}
+function toggleWidgetItem(id){
+  wState[id]=!wState[id];
+  saveWidgets();applyWidgets();renderWidgetPanel();
+  // re-init overview charts if they were just made visible
+  if(wState[id]&&id==='ov-charts'){
+    ['c-ov-line','c-ov-pie'].forEach(cid=>{const c=document.getElementById(cid);if(c){const inst=Chart.getChart(c);if(inst)inst.destroy();}});
+    delete done['overview'];buildCharts('overview');
+  }
+}
+function renderWidgetPanel(){
+  const body=document.getElementById('wp-items');body.innerHTML='';
+  const always=['ov-kpis','ov-charts','ov-table'];
+  const optional=['ov-funnel','ov-ab','ov-poverty'];
+  function makeSection(label){const d=document.createElement('div');d.className='wp-sect';d.textContent=label;body.appendChild(d);}
+  function makeItem(w){
+    const on=wState[w.id];
+    const item=document.createElement('div');
+    item.className='widget-item'+(on?' wi-on':'');
+    item.onclick=()=>toggleWidgetItem(w.id);
+    item.innerHTML=`<div class="wi-icon"><i class="ti ${w.icon}"></i></div><div class="wi-info"><div class="wi-label">${w.label}</div><div class="wi-desc">${w.desc}</div></div><div class="wi-toggle${on?' on':''}"></div>`;
+    body.appendChild(item);
+  }
+  makeSection('Standaard widgets');
+  always.forEach(id=>makeItem(WIDGET_DEFS.find(w=>w.id===id)));
+  makeSection('Optionele widgets');
+  optional.forEach(id=>makeItem(WIDGET_DEFS.find(w=>w.id===id)));
+}
+function showSection(secId){
+  const s=secId.replace('sec-','');
+  const navEl=document.querySelector('.nav-item[data-sec="'+s+'"]');
+  if(navEl)navEl.click();
+  else{
+    document.querySelectorAll('.sec').forEach(x=>x.classList.remove('active'));
+    const target=document.getElementById(secId);
+    if(target)target.classList.add('active');
+  }
+  closeWidgetPanel();
+}
+// load on start
+loadWidgets();
+</script>
+
+<!-- Widget panel -->
+<div class="widget-overlay" id="widget-overlay" onclick="closeWidgetPanel()"></div>
+<div class="widget-panel" id="widget-panel">
+  <div class="wp-head">
+    <div class="wp-title"><i class="ti ti-layout-dashboard" style="color:var(--teal)"></i> Dashboard aanpassen</div>
+    <button class="wp-close" onclick="closeWidgetPanel()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="wp-body">
+    <p style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.5">Zet widgets aan of uit. Uw voorkeur wordt lokaal opgeslagen.</p>
+    <div id="wp-items"></div>
+  </div>
+</div>
+</body>
+</html>
