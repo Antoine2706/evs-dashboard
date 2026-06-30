@@ -308,10 +308,36 @@ body.role-corp .gm-view{display:none!important}
 .nbhd-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .nbhd-stat{font-size:10px;color:var(--text3)}
 .nbhd-stat strong{display:block;font-size:13px;font-weight:700;color:var(--text2)}
-.map-legend{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-top:auto}
+.map-legend{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px}
 .map-legend-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
 .legend-row{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text2);margin-bottom:5px}
 .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+/* Postcode search */
+.pc-search-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:8px}
+.pc-search-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;color:var(--text);outline:none}
+.pc-search-input:focus{border-color:var(--teal)}
+.pc-list{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.pc-item{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text2);transition:background .12s}
+.pc-item:hover{background:var(--surface2)}
+.pc-item.active{background:rgba(61,110,142,.12);color:var(--teal)}
+.pc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.pc-hh{margin-left:auto;font-size:10px;font-weight:500;color:var(--text3);white-space:nowrap}
+/* Detail card */
+.pc-detail{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px;display:none;flex-direction:column;gap:10px}
+.pc-detail.visible{display:flex}
+.pc-detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.pc-detail-code{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+.pc-detail-wijk{font-size:10px;color:var(--text3);margin-top:2px}
+.pc-detail-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0}
+.pc-detail-close:hover{color:var(--teal)}
+.pc-metrics{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.pc-metric{background:var(--bg);border-radius:6px;padding:8px 10px}
+.pc-metric-val{font-size:16px;font-weight:700;color:var(--text);line-height:1}
+.pc-metric-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-top:3px}
+.pc-bar-wrap{display:flex;flex-direction:column;gap:4px}
+.pc-bar-row{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text3)}
+.pc-bar-track{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.pc-bar-fill{height:100%;border-radius:3px;transition:width .3s}
 .leaflet-popup-content-wrapper{background:#D1FAFF;border:1px solid rgba(168,200,224,.5);border-radius:8px;box-shadow:0 4px 20px rgba(29,51,72,.15);font-family:'DM Sans',sans-serif}
 .leaflet-popup-content{margin:12px 16px;font-size:13px;color:#1D3348}
 .leaflet-popup-tip{background:#D1FAFF}
@@ -931,11 +957,11 @@ body.mobile-view .req-table,body.mobile-view .cohort{min-width:480px}
     </section>
 
     <section id="sec-map" class="sec">
-      <div class="sec-tag">Live · Wijkkaart — Huisniveau</div>
+      <div class="sec-tag">Live · Wijkkaart — Postcode-6 niveau</div>
       <div class="sec-title">Heerlen-Noord — Interactieve Kaart</div>
-      <div class="sec-sub">Individuele huishoudens weergegeven per adres. Klik op een huis voor details. Zoom in voor straatniveau.</div>
+      <div class="sec-sub">Data geaggregeerd per 6-cijferig postcodegebied (≥10 huishoudens per gebied conform AVG). Klik op een cirkel voor details per postcodegebied.</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div class="map-live-badge" style="margin-bottom:0"><span class="map-live-dot"></span>325 huishoudens · jun 2025</div>
+        <div class="map-live-badge" style="margin-bottom:0"><span class="map-live-dot"></span>18 postcodegebieden · jun 2025</div>
         <div style="display:flex;gap:6px">
           <button class="map-layer-btn active" data-layer="participation" onclick="setMapLayer('participation')"><i class="ti ti-users" style="font-size:11px"></i> Participatie</button>
           <button class="map-layer-btn" data-layer="savings" onclick="setMapLayer('savings')"><i class="ti ti-coin" style="font-size:11px"></i> Besparing</button>
@@ -945,6 +971,25 @@ body.mobile-view .req-table,body.mobile-view .cohort{min-width:480px}
       <div id="map-wrap">
         <div id="leaflet-map"></div>
         <aside class="map-sidebar">
+          <!-- Postcode search -->
+          <div class="pc-search-wrap">
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Postcodegebied zoeken</div>
+            <input class="pc-search-input" id="pc-search" type="text" placeholder="Typ postcode, bijv. 6411…" oninput="filterPCList(this.value)">
+            <div class="pc-list" id="pc-list"></div>
+          </div>
+          <!-- Detail panel (shown on click) -->
+          <div class="pc-detail" id="pc-detail">
+            <div class="pc-detail-header">
+              <div>
+                <div class="pc-detail-code" id="pc-detail-code"></div>
+                <div class="pc-detail-wijk" id="pc-detail-wijk"></div>
+              </div>
+              <button class="pc-detail-close" onclick="closePCDetail()" title="Sluiten"><i class="ti ti-x"></i></button>
+            </div>
+            <div class="pc-metrics" id="pc-detail-metrics"></div>
+            <div class="pc-bar-wrap" id="pc-detail-bars"></div>
+          </div>
+          <!-- Wijk cards -->
           <div id="nbhd-cards"></div>
           <div class="map-legend">
             <div class="map-legend-title">Legenda</div>
@@ -1771,134 +1816,221 @@ const WIJK_DEFS=[
    streets:['Vrieheidestraat','Kerkberg','Deken Tijssenstraat','Nieuwenhagerheide']},
 ];
 
-function mkRand(seed){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967295;};}
+// ── Postcode-6 aggregated data (AVG-compliant: ≥10 households per area) ──
+const POSTCODE_AREAS=[
+  // Schuttersweide
+  {pc:'6411 AA',lat:50.9102,lng:5.9742,wijk:'schuttersweide',wijkName:'Schuttersweide',households:32,active:8,invited:6,part:25,sav:13.2,savEur:11,pov:3.1},
+  {pc:'6411 AB',lat:50.9088,lng:5.9758,wijk:'schuttersweide',wijkName:'Schuttersweide',households:28,active:6,invited:5,part:21,sav:12.8,savEur:10,pov:4.5},
+  {pc:'6411 AC',lat:50.9078,lng:5.9738,wijk:'schuttersweide',wijkName:'Schuttersweide',households:24,active:5,invited:4,part:21,sav:14.1,savEur:12,pov:3.8},
+  {pc:'6411 AD',lat:50.9095,lng:5.9768,wijk:'schuttersweide',wijkName:'Schuttersweide',households:19,active:5,invited:3,part:26,sav:13.6,savEur:11,pov:5.3},
+  // Breitnerstraat
+  {pc:'6412 AA',lat:50.9038,lng:5.9668,wijk:'breitnerstraat',wijkName:'Breitnerstraat',households:31,active:5,invited:6,part:16,sav:11.4,savEur:9,pov:6.8},
+  {pc:'6412 AB',lat:50.9022,lng:5.9682,wijk:'breitnerstraat',wijkName:'Breitnerstraat',households:22,active:4,invited:4,part:18,sav:12.2,savEur:10,pov:5.9},
+  {pc:'6412 AC',lat:50.9014,lng:5.9660,wijk:'breitnerstraat',wijkName:'Breitnerstraat',households:18,active:3,invited:4,part:17,sav:11.8,savEur:9,pov:7.2},
+  // Ferd. Bolstraat
+  {pc:'6413 AA',lat:50.8992,lng:5.9715,wijk:'bolstraat',wijkName:'Ferd. Bolstraat',households:35,active:10,invited:5,part:29,sav:14.8,savEur:13,pov:3.2},
+  {pc:'6413 AB',lat:50.8978,lng:5.9730,wijk:'bolstraat',wijkName:'Ferd. Bolstraat',households:29,active:8,invited:6,part:28,sav:15.2,savEur:13,pov:2.9},
+  {pc:'6413 AC',lat:50.8968,lng:5.9712,wijk:'bolstraat',wijkName:'Ferd. Bolstraat',households:26,active:7,invited:4,part:27,sav:13.9,savEur:12,pov:4.1},
+  {pc:'6413 AD',lat:50.8985,lng:5.9700,wijk:'bolstraat',wijkName:'Ferd. Bolstraat',households:21,active:5,invited:5,part:24,sav:14.0,savEur:12,pov:3.8},
+  // P. Breughelstraat
+  {pc:'6414 AA',lat:50.9015,lng:5.9810,wijk:'breughelstraat',wijkName:'P. Breughelstraat',households:27,active:4,invited:5,part:15,sav:10.2,savEur:8,pov:5.6},
+  {pc:'6414 AB',lat:50.9002,lng:5.9825,wijk:'breughelstraat',wijkName:'P. Breughelstraat',households:23,active:3,invited:4,part:13,sav:10.8,savEur:9,pov:4.8},
+  {pc:'6414 AC',lat:50.8992,lng:5.9808,wijk:'breughelstraat',wijkName:'P. Breughelstraat',households:18,active:3,invited:3,part:17,sav:11.1,savEur:9,pov:5.0},
+  // Vrieheide
+  {pc:'6415 AA',lat:50.9128,lng:5.9840,wijk:'vrieheide',wijkName:'Vrieheide',households:34,active:9,invited:5,part:26,sav:13.1,savEur:11,pov:7.8},
+  {pc:'6415 AB',lat:50.9112,lng:5.9858,wijk:'vrieheide',wijkName:'Vrieheide',households:28,active:6,invited:6,part:21,sav:12.5,savEur:10,pov:8.2},
+  {pc:'6415 AC',lat:50.9100,lng:5.9838,wijk:'vrieheide',wijkName:'Vrieheide',households:22,active:5,invited:4,part:23,sav:12.9,savEur:10,pov:6.9},
+  {pc:'6415 AD',lat:50.9122,lng:5.9862,wijk:'vrieheide',wijkName:'Vrieheide',households:19,active:5,invited:3,part:26,sav:13.4,savEur:11,pov:7.5},
+];
 
-function generateHousePoints(){
-  const rand=mkRand(2025);
-  const pts=[];
-  WIJK_DEFS.forEach(w=>{
-    for(let i=0;i<65;i++){
-      const isActive=rand()<(w.part/100);
-      const isInvited=!isActive&&rand()<.28;
-      const isPoverty=rand()<(w.pov/100*3.5);
-      const savOffset=(rand()-.5)*7;
-      const sav=isActive?+(w.sav+savOffset).toFixed(1):0;
-      const savEur=isActive?Math.round((sav/100)*88):0;
-      const street=w.streets[Math.floor(rand()*w.streets.length)];
-      const num=2*Math.floor(rand()*65)+1;
-      // Scatter in a realistic grid-like pattern
-      const gi=i%8, gj=Math.floor(i/8);
-      const jitter=(rand()-.5)*.4;
-      pts.push({
-        lat:w.lat+(gi/7-.5)*2*w.dlat+(rand()-.5)*.0005,
-        lng:w.lng+(gj/8-.5)*2*w.dlng+(rand()-.5)*.0005,
-        wijk:w.id, wijkName:w.name,
-        addr:`${street} ${num}`,
-        status:isActive?'active':isInvited?'invited':'none',
-        sav, savEur, poverty:isPoverty,
-        type:rand()<.83?'Sociale huur':'Particulier',
-      });
-    }
-  });
-  return pts;
+// Color helpers for choropleth layers
+function participationColor(pct){
+  if(pct>=25)return{stroke:'#2E7D52',fill:'rgba(46,125,82,.75)'};
+  if(pct>=18)return{stroke:'#C47F17',fill:'rgba(196,127,23,.65)'};
+  return{stroke:'#8B5E3C',fill:'rgba(139,94,60,.55)'};
 }
-
-const HOUSE_PTS=generateHousePoints();
+function savingsColor(pct){
+  const t=Math.min((pct-8)/8,1);
+  const r=Math.round(192-t*105),g=Math.round(57+t*110),b=Math.round(43+t*72);
+  return{stroke:`rgb(${r},${g},${b})`,fill:`rgba(${r},${g},${b},.70)`};
+}
+function povertyColor(pct){
+  if(pct>=7)return{stroke:'#C0392B',fill:'rgba(192,57,43,.75)'};
+  if(pct>=5)return{stroke:'#C47F17',fill:'rgba(196,127,23,.65)'};
+  return{stroke:'#2E7D52',fill:'rgba(46,125,82,.55)'};
+}
 
 const MAP_LAYERS={
   participation:{
     label:'Participatie',
-    color:pt=>pt.status==='active'?'#57A773':pt.status==='invited'?'#6A8EAE':'rgba(168,200,224,.5)',
-    fill:pt=>pt.status==='active'?'rgba(87,167,115,.85)':pt.status==='invited'?'rgba(106,142,174,.7)':'rgba(168,200,224,.2)',
-    highlight:pt=>pt.status==='active',
+    colorFn:pt=>participationColor(pt.part),
+    valueFn:pt=>pt.part+'%',
+    valueLabel:'Participatiegraad',
+    highlight:pt=>pt.part>=25,
     legend:[
-      {col:'#57A773',label:'Actief deelnemend'},
-      {col:'#6A8EAE',label:'Uitgenodigd · niet actief'},
-      {col:'rgba(168,200,224,.5)',label:'Niet uitgenodigd'},
+      {col:'rgba(46,125,82,.75)',label:'Hoog ≥25%'},
+      {col:'rgba(196,127,23,.65)',label:'Gemiddeld 18–24%'},
+      {col:'rgba(139,94,60,.55)',label:'Laag <18%'},
     ]
   },
   savings:{
     label:'Besparing',
-    color:pt=>{
-      if(!pt.sav||pt.sav<=0)return 'rgba(168,200,224,.4)';
-      const t=Math.min(pt.sav/20,1);
-      return `rgb(${Math.round(192-t*105)},${Math.round(57+t*110)},${Math.round(43+t*72)})`;
-    },
-    fill:pt=>{
-      if(!pt.sav||pt.sav<=0)return 'rgba(168,200,224,.2)';
-      const t=Math.min(pt.sav/20,1);
-      return `rgba(${Math.round(192-t*105)},${Math.round(57+t*110)},${Math.round(43+t*72)},.75)`;
-    },
-    highlight:pt=>pt.sav>12,
+    colorFn:pt=>savingsColor(pt.sav),
+    valueFn:pt=>pt.sav+'%',
+    valueLabel:'Gem. energiebesparing',
+    highlight:pt=>pt.sav>=14,
     legend:[
-      {col:'rgb(87,167,115)',label:'Hoge besparing > 14%'},
-      {col:'rgb(150,115,80)',label:'Gemiddeld 8–14%'},
-      {col:'rgba(168,200,224,.4)',label:'Niet deelnemend'},
+      {col:'rgb(87,167,115)',label:'Hoog ≥14%'},
+      {col:'rgb(140,100,65)',label:'Gemiddeld 11–14%'},
+      {col:'rgb(192,57,43)',label:'Laag <11%'},
     ]
   },
   poverty:{
     label:'Energiearmoede',
-    color:pt=>pt.poverty?'#C0392B':'rgba(168,200,224,.4)',
-    fill:pt=>pt.poverty?'rgba(192,57,43,.85)':'rgba(168,200,224,.2)',
-    highlight:pt=>pt.poverty,
+    colorFn:pt=>povertyColor(pt.pov),
+    valueFn:pt=>pt.pov+'%',
+    valueLabel:'Armoede prevalentie',
+    highlight:pt=>pt.pov>=7,
     legend:[
-      {col:'#C0392B',label:'Energiearmoede signaal'},
-      {col:'rgba(168,200,224,.4)',label:'Geen signaal'},
+      {col:'rgba(192,57,43,.75)',label:'Hoog risico ≥7%'},
+      {col:'rgba(196,127,23,.65)',label:'Matig 5–7%'},
+      {col:'rgba(46,125,82,.55)',label:'Laag <5%'},
     ]
   }
 };
 
-let leafletMap=null,activeMapLayer='participation',houseLayerGroup=null,selectedWijk=null,wijkPolygons={};
+let leafletMap=null,activeMapLayer='participation',pcLayerGroup=null,selectedWijk=null,selectedPC=null,wijkPolygons={};
 
 function buildMap(){
   if(leafletMap){leafletMap.invalidateSize();return;}
-  leafletMap=L.map('leaflet-map',{zoomControl:true,scrollWheelZoom:true}).setView([50.905,5.977],16);
+  leafletMap=L.map('leaflet-map',{zoomControl:true,scrollWheelZoom:true}).setView([50.905,5.977],14);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
     attribution:'© OpenStreetMap © CartoDB',maxZoom:20
   }).addTo(leafletMap);
-  renderHouseLayer();
+  buildPCList('');
+  renderPostcodeLayer();
   buildMapSidebar();
   setTimeout(()=>leafletMap.invalidateSize(),120);
 }
 
-function renderHouseLayer(){
-  if(houseLayerGroup)leafletMap.removeLayer(houseLayerGroup);
-  houseLayerGroup=L.layerGroup();
+function layerDotColor(pt){
+  if(activeMapLayer==='participation') return participationColor(pt.part).fill;
+  if(activeMapLayer==='savings') return savingsColor(pt.sav).fill;
+  return povertyColor(pt.pov).fill;
+}
+
+function buildPCList(filter){
+  const list=document.getElementById('pc-list');
+  if(!list)return;
+  const q=(filter||'').toLowerCase().replace(/\s/g,'');
+  const filtered=POSTCODE_AREAS.filter(a=>a.pc.toLowerCase().replace(/\s/g,'').includes(q)||a.wijkName.toLowerCase().includes(q));
+  list.innerHTML=filtered.map(a=>{
+    const col=layerDotColor(a);
+    const active=selectedPC===a.pc?'active':'';
+    return`<div class="pc-item ${active}" data-pc="${a.pc}" onclick="selectPC('${a.pc}')">
+      <span class="pc-dot" style="background:${col}"></span>
+      <span>${a.pc}</span>
+      <span class="pc-hh">${a.households} hh.</span>
+    </div>`;
+  }).join('');
+}
+
+function filterPCList(val){
+  buildPCList(val);
+}
+
+function selectPC(pc){
+  selectedPC=pc===selectedPC?null:pc;
+  selectedWijk=null;
+  document.querySelectorAll('.nbhd-card').forEach(c=>{c.classList.remove('sel');c.style.opacity='1';});
+  Object.values(wijkPolygons).forEach(p=>p.setStyle({opacity:0,fillOpacity:0}));
+  const search=document.getElementById('pc-search');
+  if(search&&selectedPC) search.value=selectedPC;
+  buildPCList(search?search.value:'');
+  if(selectedPC){
+    const area=POSTCODE_AREAS.find(a=>a.pc===selectedPC);
+    if(area){
+      leafletMap.setView([area.lat,area.lng],16,{animate:true});
+      showPCDetail(area);
+    }
+  } else {
+    closePCDetail();
+  }
+  renderPostcodeLayer();
+}
+
+function filterByPostcode(pc){ selectPC(pc); }
+
+function showPCDetail(area){
+  const panel=document.getElementById('pc-detail');
+  if(!panel)return;
+  document.getElementById('pc-detail-code').textContent=area.pc;
+  document.getElementById('pc-detail-wijk').textContent=`${area.wijkName} · ${area.households} huishoudens`;
+  const partCol=area.part>=25?'#2E7D52':area.part>=18?'#C47F17':'#8B5E3C';
+  const povCol=area.pov>=7?'#C0392B':area.pov>=5?'#C47F17':'#2E7D52';
+  document.getElementById('pc-detail-metrics').innerHTML=`
+    <div class="pc-metric"><div class="pc-metric-val" style="color:${partCol}">${area.part}%</div><div class="pc-metric-lbl">Participatie</div></div>
+    <div class="pc-metric"><div class="pc-metric-val">${area.active}</div><div class="pc-metric-lbl">Actief</div></div>
+    <div class="pc-metric"><div class="pc-metric-val" style="color:#3D6E8E">${area.sav}%</div><div class="pc-metric-lbl">Besparing</div></div>
+    <div class="pc-metric"><div class="pc-metric-val" style="color:${povCol}">${area.pov}%</div><div class="pc-metric-lbl">Armoede</div></div>
+  `;
+  document.getElementById('pc-detail-bars').innerHTML=`
+    <div class="pc-bar-row"><span style="width:72px">Participatie</span><div class="pc-bar-track"><div class="pc-bar-fill" style="width:${Math.min(area.part*3,100)}%;background:${partCol}"></div></div><span>${area.part}%</span></div>
+    <div class="pc-bar-row"><span style="width:72px">Besparing</span><div class="pc-bar-track"><div class="pc-bar-fill" style="width:${Math.min(area.sav*5,100)}%;background:#3D6E8E"></div></div><span>${area.sav}%</span></div>
+    <div class="pc-bar-row"><span style="width:72px">€/mnd</span><div class="pc-bar-track"><div class="pc-bar-fill" style="width:${Math.min(area.savEur*7,100)}%;background:#3D6E8E"></div></div><span>€${area.savEur}</span></div>
+    <div class="pc-bar-row"><span style="width:72px">Armoede</span><div class="pc-bar-track"><div class="pc-bar-fill" style="width:${Math.min(area.pov*8,100)}%;background:${povCol}"></div></div><span>${area.pov}%</span></div>
+  `;
+  panel.classList.add('visible');
+}
+
+function closePCDetail(skipRender){
+  const panel=document.getElementById('pc-detail');
+  if(panel) panel.classList.remove('visible');
+  selectedPC=null;
+  const search=document.getElementById('pc-search');
+  if(search) search.value='';
+  buildPCList('');
+  if(!skipRender) renderPostcodeLayer();
+}
+
+function renderPostcodeLayer(){
+  if(pcLayerGroup)leafletMap.removeLayer(pcLayerGroup);
+  pcLayerGroup=L.layerGroup();
   const layer=MAP_LAYERS[activeMapLayer];
 
-  const sorted=[...HOUSE_PTS].sort((a,b)=>layer.highlight(a)?1:layer.highlight(b)?-1:0);
+  POSTCODE_AREAS.forEach(pt=>{
+    const dimmed=selectedWijk&&pt.wijk!==selectedWijk||selectedPC&&pt.pc!==selectedPC;
+    const hi=!dimmed&&layer.highlight(pt);
+    const c=dimmed?{stroke:'rgba(168,200,224,.3)',fill:'rgba(168,200,224,.1)'}:layer.colorFn(pt);
+    const radius=Math.max(10,Math.min(22,pt.households/2.5))*(hi?1.2:1);
 
-  sorted.forEach(pt=>{
-    const inSel=!selectedWijk||pt.wijk===selectedWijk;
-    const hi=inSel&&layer.highlight(pt);
     const m=L.circleMarker([pt.lat,pt.lng],{
-      radius:hi?7:inSel?4:3,
-      color:inSel?layer.color(pt):'rgba(168,200,224,.25)',
-      fillColor:inSel?layer.fill(pt):'rgba(168,200,224,.08)',
-      fillOpacity:inSel?(hi?.92:.65):.25,
-      weight:hi?1.5:.5,
+      radius,
+      color:c.stroke,
+      fillColor:c.fill,
+      fillOpacity:dimmed?.2:.88,
+      weight:hi?2:1,
     });
 
-    const statusHtml=pt.status==='active'?`<span style="color:#57A773;font-weight:700">✓ Actief deelnemend</span>`:
-                     pt.status==='invited'?`<span style="color:#6A8EAE">◎ Uitgenodigd</span>`:
-                     `<span style="color:#A8C8E0">— Niet uitgenodigd</span>`;
-    const povHtml=pt.poverty?`<div style="margin-top:7px;padding:4px 8px;background:rgba(192,57,43,.1);border-radius:4px;font-size:11px;color:#C0392B;font-weight:600">⚠ Energiearmoede signaal</div>`:'';
+    const povBadge=pt.pov>=7
+      ?`<div style="margin-top:7px;padding:4px 8px;background:rgba(192,57,43,.1);border-radius:4px;font-size:11px;color:#C0392B;font-weight:600">⚠ Hoog armoederisico (${pt.pov}%)</div>`:'';
 
     m.bindPopup(`
-      <div class="popup-name">${pt.addr}</div>
-      <div style="font-size:11px;color:#6A8EAE;margin-bottom:8px">${pt.wijkName} · ${pt.type}</div>
+      <div class="popup-name">${pt.pc}</div>
+      <div style="font-size:11px;color:#6A8EAE;margin-bottom:8px">${pt.wijkName} · ${pt.households} huishoudens</div>
       <div class="popup-grid">
-        <div class="popup-stat">${statusHtml}<br><span style="font-size:10px;color:#A8C8E0">Status</span></div>
-        <div class="popup-stat"><strong>${pt.savEur>0?'€'+pt.savEur+'/mnd':'—'}</strong><br><span style="font-size:10px;color:#A8C8E0">Kostenbesparing</span></div>
-        <div class="popup-stat"><strong>${pt.sav>0?pt.sav+'%':'—'}</strong><br><span style="font-size:10px;color:#A8C8E0">Energiereductie</span></div>
-        <div class="popup-stat"><strong>${pt.type}</strong><br><span style="font-size:10px;color:#A8C8E0">Woningtype</span></div>
-      </div>${povHtml}
-    `,{maxWidth:250});
+        <div class="popup-stat"><strong>${pt.active}</strong><br><span style="font-size:10px;color:#A8C8E0">Actief</span></div>
+        <div class="popup-stat"><strong>${pt.part}%</strong><br><span style="font-size:10px;color:#A8C8E0">Participatie</span></div>
+        <div class="popup-stat"><strong>${pt.sav}%</strong><br><span style="font-size:10px;color:#A8C8E0">Besparing</span></div>
+        <div class="popup-stat"><strong>${pt.pov}%</strong><br><span style="font-size:10px;color:#A8C8E0">Armoede</span></div>
+      </div>${povBadge}
+    `,{maxWidth:230});
 
-    houseLayerGroup.addLayer(m);
+    m.on('click',()=>selectPC(pt.pc));
+    pcLayerGroup.addLayer(m);
   });
 
-  houseLayerGroup.addTo(leafletMap);
+  pcLayerGroup.addTo(leafletMap);
   updateMapLegend();
 }
 
@@ -1913,7 +2045,21 @@ function updateMapLegend(){
 function setMapLayer(type){
   activeMapLayer=type;
   document.querySelectorAll('.map-layer-btn').forEach(b=>b.classList.toggle('active',b.dataset.layer===type));
-  renderHouseLayer();
+  renderPostcodeLayer();
+  const search=document.getElementById('pc-search');
+  buildPCList(search?search.value:'');
+}
+
+function filterByPostcode(pc){
+  selectedPC=pc||null;
+  selectedWijk=null;
+  document.querySelectorAll('.nbhd-card').forEach(c=>{ c.classList.remove('sel'); c.style.opacity='1'; });
+  Object.values(wijkPolygons).forEach(p=>p.setStyle({opacity:0,fillOpacity:0}));
+  if(pc){
+    const area=POSTCODE_AREAS.find(a=>a.pc===pc);
+    if(area) leafletMap.setView([area.lat,area.lng],16,{animate:true});
+  }
+  renderPostcodeLayer();
 }
 
 function buildMapSidebar(){
@@ -1921,18 +2067,16 @@ function buildMapSidebar(){
   if(!cards)return;
   cards.innerHTML='';
 
-  // Pre-draw polygon boundaries for each wijk (hidden until selected)
   Object.values(wijkPolygons).forEach(p=>leafletMap.removeLayer(p));
   wijkPolygons={};
   WIJK_DEFS.forEach(w=>{
     const col=w.pov>6?'#C0392B':w.part>=22?'#57A773':'#C47F17';
-    // Build a soft rounded rectangle as 8-point polygon
     const la=w.dlat*.95,ln=w.dlng*.95,c=.3;
     const poly=L.polygon([
-      [w.lat+la,     w.lng-ln+ln*c],[w.lat+la,     w.lng+ln-ln*c],
-      [w.lat+la-la*c,w.lng+ln      ],[w.lat-la+la*c,w.lng+ln      ],
-      [w.lat-la,     w.lng+ln-ln*c],[w.lat-la,     w.lng-ln+ln*c],
-      [w.lat-la+la*c,w.lng-ln      ],[w.lat+la-la*c,w.lng-ln      ],
+      [w.lat+la,w.lng-ln+ln*c],[w.lat+la,w.lng+ln-ln*c],
+      [w.lat+la-la*c,w.lng+ln],[w.lat-la+la*c,w.lng+ln],
+      [w.lat-la,w.lng+ln-ln*c],[w.lat-la,w.lng-ln+ln*c],
+      [w.lat-la+la*c,w.lng-ln],[w.lat+la-la*c,w.lng-ln],
     ],{color:col,fillColor:col,fillOpacity:.06,weight:2,dashArray:'6 4',opacity:0});
     poly.addTo(leafletMap);
     wijkPolygons[w.id]=poly;
@@ -1940,16 +2084,17 @@ function buildMapSidebar(){
     const card=document.createElement('div');
     card.className='nbhd-card';
     card.dataset.wijk=w.id;
+    const pcCount=POSTCODE_AREAS.filter(a=>a.wijk===w.id).length;
     card.innerHTML=`<div class="nbhd-card-name"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px;vertical-align:middle"></span>${w.name}</div>
       <div class="nbhd-stats">
         <div class="nbhd-stat"><strong style="color:${col}">${w.part}%</strong>Participatie</div>
-        <div class="nbhd-stat"><strong>${w.active}</strong>Actief</div>
+        <div class="nbhd-stat"><strong>${pcCount}</strong>PC-gebieden</div>
         <div class="nbhd-stat"><strong>${w.sav}%</strong>Besparing</div>
         <div class="nbhd-stat"><strong style="color:${w.pov>5?'#C0392B':'inherit'}">${w.pov}%</strong>Armoede</div>
       </div>`;
     card.addEventListener('click',()=>{
-      const isAlreadySel=selectedWijk===w.id;
-      selectWijk(isAlreadySel?null:w.id);
+      const isSel=selectedWijk===w.id;
+      selectWijk(isSel?null:w.id);
     });
     cards.appendChild(card);
   });
@@ -1957,25 +2102,25 @@ function buildMapSidebar(){
 
 function selectWijk(id){
   selectedWijk=id;
-  // Update card styles
+  selectedPC=null;
+  closePCDetail(true);
   document.querySelectorAll('.nbhd-card').forEach(c=>{
     const active=!id||c.dataset.wijk===id;
     c.classList.toggle('sel',c.dataset.wijk===id);
     c.style.opacity=active?'1':'.45';
   });
-  // Show/hide polygons
   WIJK_DEFS.forEach(w=>{
     const p=wijkPolygons[w.id];
     if(!p)return;
     const col=w.pov>6?'#C0392B':w.part>=22?'#57A773':'#C47F17';
     if(id===w.id){
       p.setStyle({opacity:1,fillOpacity:.08,weight:2.5});
-      leafletMap.setView([w.lat,w.lng],17,{animate:true});
+      leafletMap.setView([w.lat,w.lng],15,{animate:true});
     } else {
       p.setStyle({opacity:0,fillOpacity:0});
     }
   });
-  renderHouseLayer();
+  renderPostcodeLayer();
 }
 
 // ── Corp-specific data ────────────────────────────────────
