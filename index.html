@@ -2330,6 +2330,12 @@ function showSection(secId){
 // load on start
 loadWidgets();
 if(window.innerWidth<=768){setView('mobile');}
+// Opened from the resident-app demonstration with ?role=gemeente or ?role=corp:
+// the role was chosen there, so the picker is skipped and that view opens.
+(function(){
+  const r=new URLSearchParams(location.search).get('role');
+  if(r==='gemeente'||r==='corp')selectRole(r);
+})();
 </script>
 
 <!-- Widget panel -->
